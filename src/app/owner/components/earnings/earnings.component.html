@@ -1,0 +1,392 @@
+<div class="analytics-page">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <span class="loading-icon">📊</span>
+      </div>
+      <p>Loading your analytics...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span class="error-icon">⚠️</span>
+      <div class="error-content">
+        <p>{{ error() }}</p>
+        <button class="btn btn-sm btn-primary" (click)="loadAnalytics()">Retry</button>
+      </div>
+    </div>
+  }
+
+  <!-- Success Toast -->
+  @if (successMessage()) {
+    <div class="toast-success">
+      <span class="toast-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <!-- Error Toast -->
+  @if (errorMessage()) {
+    <div class="toast-error">
+      <span class="toast-icon">✕</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">📊</div>
+        <div class="header-text">
+          <h1>Revenue Analytics</h1>
+          <p>Track your billboard performance and earnings</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline" (click)="loadAnalytics()">
+          <span>🔄</span> Refresh
+        </button>
+        <div class="export-dropdown">
+          <button class="btn btn-primary" (click)="toggleExportMenu()" [disabled]="exportingCSV() || exportingPDF()">
+            @if (exportingCSV() || exportingPDF()) {
+              <span class="btn-spinner"></span> Exporting...
+            } @else {
+              <span>📥</span> Export Report <span class="dropdown-arrow">▼</span>
+            }
+          </button>
+          @if (showExportMenu()) {
+            <div class="export-menu">
+              <button class="export-option" (click)="exportCSV()">
+                <span>📄</span> Export as CSV
+              </button>
+              <button class="export-option" (click)="exportPDF()">
+                <span>📑</span> Export as PDF
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Stats -->
+    <div class="hero-stats">
+      <div class="hero-card main">
+        <div class="hero-glow"></div>
+        <div class="hero-content">
+          <div class="hero-label">
+            <span class="hero-icon">💰</span>
+            Total Revenue
+          </div>
+          <div class="hero-value">{{ formatCurrency(totalRevenue()) }}</div>
+          <div class="hero-meta">
+            @if (monthlyData().length > 0) {
+              <span class="growth-badge" [class]="getGrowthClass()">
+                @if (revenueGrowth() > 0) { ↑ } @else if (revenueGrowth() < 0) { ↓ } @else { → }
+                {{ revenueGrowth() | number:'1.1-1' }}%
+              </span>
+              <span class="period-label">vs last month</span>
+            }
+          </div>
+        </div>
+        <div class="hero-decoration">
+          <span>💵</span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">📋</div>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalBookings() }}</span>
+            <span class="stat-label">Total Bookings</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">🏗️</div>
+          <div class="stat-info">
+            <span class="stat-value">{{ activeBillboards() }}</span>
+            <span class="stat-label">Active Billboards</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📈</div>
+          <div class="stat-info">
+            <span class="stat-value">{{ formatCompactCurrency(averageRevenue()) }}</span>
+            <span class="stat-label">Avg. per Billboard</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">🏆</div>
+          <div class="stat-info">
+            <span class="stat-value">{{ billboardRevenues().length }}</span>
+            <span class="stat-label">Total Billboards</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      <!-- Monthly Revenue Chart -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">📈</span>
+            <h3>Monthly Revenue</h3>
+          </div>
+          <div class="card-controls">
+            <div class="view-toggle">
+              <button class="toggle-btn" [class.active]="chartView() === 'bar'" (click)="setChartView('bar')">
+                ▮▯▮
+              </button>
+              <button class="toggle-btn" [class.active]="chartView() === 'line'" (click)="setChartView('line')">
+                📉
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          @if (monthlyData().length === 0) {
+            <div class="empty-chart">
+              <span class="empty-icon">📊</span>
+              <p>No revenue data available yet</p>
+              <span class="empty-hint">Revenue will appear here once you have bookings</span>
+            </div>
+          } @else {
+            <div class="bar-chart">
+              @for (data of monthlyData(); track data.fullMonth) {
+                <div class="bar-column">
+                  <div class="bar-wrapper">
+                    <div class="bar"
+                         [style.height.%]="getBarHeight(data.revenue)"
+                         [class.highlight]="data === monthlyData()[monthlyData().length - 1]">
+                      <div class="bar-tooltip">
+                        <span class="tooltip-month">{{ data.month }}</span>
+                        <span class="tooltip-value">{{ formatCurrency(data.revenue) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span class="bar-label">{{ data.month }}</span>
+                </div>
+              }
+            </div>
+            <div class="chart-summary">
+              <div class="summary-item">
+                <span class="summary-label">Current Month</span>
+                <span class="summary-value highlight">
+                  {{ formatCurrency(monthlyData()[monthlyData().length - 1]?.revenue || 0) }}
+                </span>
+              </div>
+              <div class="summary-divider"></div>
+              <div class="summary-item">
+                <span class="summary-label">Avg Monthly</span>
+                <span class="summary-value">
+                  {{ formatCurrency(totalRevenue() / (monthlyData().length || 1)) }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Top Performer Card -->
+      @if (topPerformer()) {
+        <div class="card top-performer-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">🏆</span>
+              <h3>Top Performer</h3>
+            </div>
+            <span class="badge gold">Best Revenue</span>
+          </div>
+          <div class="top-performer-content">
+            <div class="performer-avatar">
+              <span class="avatar-letter">{{ getBillboardInitial(topPerformer()!.title) }}</span>
+              <span class="crown-badge">👑</span>
+            </div>
+            <div class="performer-info">
+              <h4>{{ topPerformer()!.title || 'Billboard #' + topPerformer()!.billboardId }}</h4>
+              <div class="performer-stats">
+                <div class="performer-stat">
+                  <span class="stat-icon-sm">💰</span>
+                  <span class="stat-text">{{ formatCurrency(topPerformer()!.revenue) }}</span>
+                </div>
+                <div class="performer-stat">
+                  <span class="stat-icon-sm">📋</span>
+                  <span class="stat-text">{{ topPerformer()!.totalBookings }} bookings</span>
+                </div>
+              </div>
+            </div>
+            <div class="performer-progress">
+              <div class="progress-circle">
+                <svg viewBox="0 0 36 36">
+                  <path class="progress-bg"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path class="progress-bar"
+                        [style.stroke-dasharray]="getRevenuePercentage(topPerformer()!.revenue) + ', 100'"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <span class="progress-text">{{ getRevenuePercentage(topPerformer()!.revenue) | number:'1.0-0' }}%</span>
+              </div>
+              <span class="progress-label">of total revenue</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Billboard Revenue Breakdown -->
+    <div class="card breakdown-card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon">🏗️</span>
+          <h3>Billboard Revenue Breakdown</h3>
+        </div>
+        <span class="results-count">{{ billboardRevenues().length }} billboards</span>
+      </div>
+      <div class="billboard-list">
+        @if (billboardRevenues().length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">🏗️</span>
+            <p>No billboard data available</p>
+            <a routerLink="/owner/billboards" class="btn btn-primary btn-sm">Add Billboard</a>
+          </div>
+        } @else {
+          @for (billboard of billboardRevenues(); track billboard.billboardId; let i = $index) {
+            <div class="billboard-item" [class.top-three]="i < 3">
+              <div class="billboard-rank">
+                @if (i === 0) {
+                  <span class="rank-badge gold">🥇</span>
+                } @else if (i === 1) {
+                  <span class="rank-badge silver">🥈</span>
+                } @else if (i === 2) {
+                  <span class="rank-badge bronze">🥉</span>
+                } @else {
+                  <span class="rank-number">{{ i + 1 }}</span>
+                }
+              </div>
+              <div class="billboard-avatar" [style.background]="getPerformanceColor(getRevenuePercentage(billboard.revenue))">
+                {{ getBillboardInitial(billboard.title) }}
+              </div>
+              <div class="billboard-info">
+                <h4>{{ billboard.title || 'Billboard #' + billboard.billboardId }}</h4>
+                <div class="billboard-meta">
+                  <span class="meta-item">
+                    <span class="meta-icon">📋</span>
+                    {{ billboard.totalBookings }} bookings
+                  </span>
+                  @if (billboard.imageCount > 0) {
+                    <span class="meta-item">
+                      <span class="meta-icon">🖼️</span>
+                      {{ billboard.imageCount }} images
+                    </span>
+                  }
+                </div>
+              </div>
+              <div class="billboard-revenue">
+                <span class="revenue-amount">{{ formatCurrency(billboard.revenue) }}</span>
+                <div class="revenue-bar-wrapper">
+                  <div class="revenue-bar"
+                       [style.width.%]="getRevenuePercentage(billboard.revenue)"
+                       [style.background]="getPerformanceColor(getRevenuePercentage(billboard.revenue))">
+                  </div>
+                </div>
+                <span class="revenue-percentage">{{ getRevenuePercentage(billboard.revenue) | number:'1.1-1' }}%</span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Revenue Distribution -->
+    <div class="card distribution-card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon">🎯</span>
+          <h3>Revenue Distribution</h3>
+        </div>
+      </div>
+      <div class="distribution-content">
+        <div class="donut-chart">
+          <div class="donut-center">
+            <span class="donut-total">{{ formatCompactCurrency(totalRevenue()) }}</span>
+            <span class="donut-label">Total</span>
+          </div>
+          @for (billboard of billboardRevenues().slice(0, 5); track billboard.billboardId; let i = $index) {
+            <div class="donut-segment"
+                 [style.--segment-color]="getPerformanceColor(getRevenuePercentage(billboard.revenue))"
+                 [style.--segment-rotation]="getSegmentRotation(i) + 'deg'"
+                 [style.--segment-percentage]="getRevenuePercentage(billboard.revenue)">
+            </div>
+          }
+        </div>
+        <div class="distribution-legend">
+          @for (billboard of billboardRevenues().slice(0, 5); track billboard.billboardId; let i = $index) {
+            <div class="legend-item">
+              <span class="legend-color" [style.background]="getPerformanceColor(getRevenuePercentage(billboard.revenue))"></span>
+              <span class="legend-label">{{ billboard.title || 'Billboard #' + billboard.billboardId }}</span>
+              <span class="legend-value">{{ getRevenuePercentage(billboard.revenue) | number:'1.1-1' }}%</span>
+            </div>
+          }
+          @if (billboardRevenues().length > 5) {
+            <div class="legend-item others">
+              <span class="legend-color" style="background: #94a3b8;"></span>
+              <span class="legend-label">Others</span>
+              <span class="legend-value">{{ getOthersPercentage() | number:'1.1-1' }}%</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Insights -->
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-icon green">📈</div>
+        <div class="insight-content">
+          <h4>Revenue Growth</h4>
+          <p>
+            @if (revenueGrowth() > 0) {
+              Your revenue grew by {{ revenueGrowth() | number:'1.1-1' }}% compared to last month. Keep up the great work!
+            } @else if (revenueGrowth() < 0) {
+              Revenue decreased by {{ -revenueGrowth() | number:'1.1-1' }}% compared to last month. Consider promotional offers.
+            } @else {
+              Revenue is stable. Look for growth opportunities!
+            }
+          </p>
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon blue">🎯</div>
+        <div class="insight-content">
+          <h4>Performance Tip</h4>
+          <p>
+            @if (topPerformer() && topPerformer()!.imageCount > 0) {
+              Your top billboard has {{ topPerformer()!.imageCount }} images. Well-presented billboards attract more bookings!
+            } @else {
+              Add high-quality images to your billboards to attract more advertisers.
+            }
+          </p>
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon purple">💡</div>
+        <div class="insight-content">
+          <h4>Quick Stat</h4>
+          <p>
+            You're earning an average of {{ formatCurrency(averageRevenue()) }} per active billboard.
+            @if (billboardRevenues().length - activeBillboards() > 0) {
+              {{ billboardRevenues().length - activeBillboards() }} billboards have no bookings yet.
+            }
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+</div>

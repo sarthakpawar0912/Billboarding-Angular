@@ -1,0 +1,377 @@
+<div class="dashboard">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading dashboard data...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-sm btn-primary" (click)="loadDashboardData()">Retry</button>
+    </div>
+  }
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1><span class="header-icon">📢</span> Advertiser Dashboard</h1>
+      <p>Discover billboards and manage your advertising campaigns.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="loadDashboardData()">
+        <span>🔄</span> Refresh
+      </button>
+      <button class="btn btn-primary" routerLink="/advertiser/browse">
+        <span>🔍</span> Browse Billboards
+      </button>
+    </div>
+  </div>
+
+  <!-- Primary Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card highlight">
+      <div class="stat-icon blue">💰</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ formatCurrency(stats()?.totalSpent || 0) }}</span>
+        <span class="stat-label">Total Spent</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.activeBookings || 0 }}</span>
+        <span class="stat-label">Active Campaigns</span>
+      </div>
+      @if (stats()?.activeBookings) {
+        <div class="stat-badge success">running</div>
+      }
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon purple">📅</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.totalBookings || 0 }}</span>
+        <span class="stat-label">Total Bookings</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon orange">⏳</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.pendingBookings || 0 }}</span>
+        <span class="stat-label">Pending Approval</span>
+      </div>
+      @if (stats()?.pendingBookings) {
+        <div class="stat-badge warning">awaiting</div>
+      }
+    </div>
+  </div>
+
+  <!-- Secondary Stats Row -->
+  <div class="stats-grid secondary">
+    <div class="stat-card mini">
+      <div class="stat-icon-small completed">✓</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.completedBookings || 0 }}</span>
+        <span class="stat-label">Completed</span>
+      </div>
+    </div>
+
+    <div class="stat-card mini">
+      <div class="stat-icon-small cancelled">✕</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.cancelledBookings || 0 }}</span>
+        <span class="stat-label">Cancelled</span>
+      </div>
+    </div>
+
+    <div class="stat-card mini">
+      <div class="stat-icon-small rejected">⊘</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.rejectedBookings || 0 }}</span>
+        <span class="stat-label">Rejected</span>
+      </div>
+    </div>
+
+    <div class="stat-card mini">
+      <div class="stat-icon-small favorites">❤️</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.totalFavorites || 0 }}</span>
+        <span class="stat-label">Favorites</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Cards -->
+  @if (stats()?.pendingBookings) {
+    <div class="alert-cards">
+      <div class="alert-card info">
+        <div class="alert-icon">⏳</div>
+        <div class="alert-content">
+          <h4>{{ stats()?.pendingBookings }} Bookings Awaiting Approval</h4>
+          <p>Owners are reviewing your booking requests</p>
+        </div>
+        <button class="btn btn-sm btn-info" routerLink="/advertiser/bookings">
+          <span>📋</span> View Bookings
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Spending Summary - Analytics Hero (Moved Up) -->
+  <div class="card spending-card">
+    <div class="card-header">
+      <h3><span>💰</span> Spending Summary</h3>
+      <span class="card-badge">All Time</span>
+    </div>
+    <div class="spending-summary">
+      <div class="spending-main">
+        <div class="spending-amount">{{ formatCurrency(stats()?.totalSpent || 0) }}</div>
+        <div class="spending-label">Total Advertising Investment</div>
+      </div>
+      <div class="spending-breakdown">
+        <div class="spending-stat">
+          <span class="stat-icon-small">📅</span>
+          <div class="stat-detail">
+            <span class="stat-number">{{ stats()?.totalBookings || 0 }}</span>
+            <span class="stat-text">Bookings</span>
+          </div>
+        </div>
+        <div class="spending-stat">
+          <span class="stat-icon-small">✅</span>
+          <div class="stat-detail">
+            <span class="stat-number">{{ stats()?.activeBookings || 0 }}</span>
+            <span class="stat-text">Active</span>
+          </div>
+        </div>
+        <div class="spending-stat">
+          <span class="stat-icon-small">💵</span>
+          <div class="stat-detail">
+            <span class="stat-number">{{ formatCurrency((stats()?.totalSpent || 0) / Math.max(stats()?.totalBookings || 1, 1)) }}</span>
+            <span class="stat-text">Avg. Investment</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h3><span>⚡</span> Quick Actions</h3>
+    <div class="actions-grid">
+      <a routerLink="/advertiser/browse" class="action-card">
+        <span class="action-icon">🔍</span>
+        <span class="action-label">Find Billboards</span>
+      </a>
+      <a routerLink="/advertiser/bookings" class="action-card">
+        <span class="action-icon">📋</span>
+        <span class="action-label">My Bookings</span>
+        @if (stats()?.pendingBookings) {
+          <span class="action-badge">{{ stats()?.pendingBookings }}</span>
+        }
+      </a>
+      <a routerLink="/advertiser/favorites" class="action-card">
+        <span class="action-icon">❤️</span>
+        <span class="action-label">Favorites</span>
+        <span class="action-count">{{ stats()?.totalFavorites || 0 }}</span>
+      </a>
+      <a routerLink="/advertiser/profile" class="action-card">
+        <span class="action-icon">👤</span>
+        <span class="action-label">Profile</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="content-grid">
+    <!-- Recent Bookings -->
+    <div class="card">
+      <div class="card-header">
+        <h3><span>📅</span> Recent Bookings</h3>
+        <a routerLink="/advertiser/bookings" class="link">View All →</a>
+      </div>
+      <div class="bookings-list">
+        @if (recentBookings().length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">📅</span>
+            <p>No bookings yet</p>
+            <button class="btn btn-primary btn-sm" routerLink="/advertiser/browse">Browse Billboards</button>
+          </div>
+        }
+        @for (booking of recentBookings(); track booking.id) {
+          <div class="booking-item">
+            <div class="booking-avatar">
+              {{ booking.billboardTitle?.charAt(0) || 'B' }}
+            </div>
+            <div class="booking-info">
+              <h4>{{ booking.billboardTitle }}</h4>
+              <p>{{ booking.billboardLocation }}</p>
+              <span class="booking-date">{{ formatDate(booking.startDate) }} - {{ formatDate(booking.endDate) }}</span>
+            </div>
+            <div class="booking-amount">{{ formatCurrency(booking.totalAmount) }}</div>
+            <span class="status-badge" [ngClass]="getStatusClass(booking.status)">
+              {{ booking.status }}
+            </span>
+            @if (booking.status === 'PENDING') {
+              <button class="action-btn cancel" (click)="cancelBooking(booking.id)" title="Cancel">
+                <span>✕</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Booking Breakdown -->
+    <div class="card">
+      <div class="card-header">
+        <h3><span>📊</span> Booking Overview</h3>
+        <span class="card-badge">All Time</span>
+      </div>
+      <div class="breakdown-content">
+        @if (getBookingBreakdown().length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">📊</span>
+            <p>No booking data available yet</p>
+          </div>
+        } @else {
+          <div class="breakdown-chart">
+            @for (item of getBookingBreakdown(); track item.label) {
+              <div class="breakdown-bar-container">
+                <div class="breakdown-label">
+                  <span class="breakdown-dot" [style.background]="item.color"></span>
+                  {{ item.label }}
+                </div>
+                <div class="breakdown-bar-wrapper">
+                  <div class="breakdown-bar"
+                       [style.width.%]="(item.value / getTotalBookingsForChart()) * 100"
+                       [style.background]="item.color">
+                  </div>
+                </div>
+                <div class="breakdown-value">{{ item.value }}</div>
+              </div>
+            }
+          </div>
+          <div class="breakdown-summary">
+            <div class="summary-item">
+              <span class="summary-value">{{ formatCurrency(stats()?.totalSpent || 0) }}</span>
+              <span class="summary-label">Total Investment</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-value">{{ formatCurrency((stats()?.totalSpent || 0) / Math.max(stats()?.totalBookings || 1, 1)) }}</span>
+              <span class="summary-label">Avg. per Booking</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Available Billboards / Recommendations -->
+  <div class="card recommendations-card">
+    <div class="card-header">
+      <h3><span>🎯</span> Recommended Billboards</h3>
+      <a routerLink="/advertiser/browse" class="link">Explore More →</a>
+    </div>
+    <div class="recommendations-grid">
+      @if (availableBillboards().length === 0) {
+        <div class="empty-state full-width">
+          <span class="empty-icon">🏗️</span>
+          <p>No billboards available at the moment</p>
+        </div>
+      }
+      @for (billboard of availableBillboards(); track billboard.id) {
+        <div class="recommendation-card">
+          <div class="rec-image">
+            @if (billboard.imagePaths && billboard.imagePaths.length > 0) {
+              <img [src]="getImageUrl(billboard.imagePaths[0])" [alt]="billboard.title">
+            } @else {
+              <div class="rec-placeholder">
+                <span>🏗️</span>
+              </div>
+            }
+            <button class="favorite-btn"
+                    [class.active]="isInFavorites(billboard.id)"
+                    (click)="isInFavorites(billboard.id) ? removeFromFavorites(billboard.id) : addToFavorites(billboard.id)">
+              {{ isInFavorites(billboard.id) ? '❤️' : '🤍' }}
+            </button>
+            <span class="rec-type">{{ billboard.billboardType }}</span>
+          </div>
+          <div class="rec-content">
+            <h4>{{ billboard.title }}</h4>
+            <p class="rec-location"><span>📍</span> {{ billboard.location }}</p>
+            <p class="rec-size"><span>📐</span> {{ billboard.size }}</p>
+            <div class="rec-footer">
+              <div class="rec-price">
+                <span class="price-value">{{ formatCurrency(billboard.pricePerDay) }}</span>
+                <span class="price-period">/day</span>
+              </div>
+              <button class="btn btn-primary btn-sm" routerLink="/advertiser/browse">
+                Book Now
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Favorites Section -->
+  <div class="card favorites-card">
+    <div class="card-header">
+      <h3><span>❤️</span> My Favorites</h3>
+      <a routerLink="/advertiser/favorites" class="link">View All →</a>
+    </div>
+    @if (favorites().length === 0) {
+      <div class="favorites-empty">
+        <div class="empty-heart">♡</div>
+        <p>No favorites yet</p>
+        <span>Save billboards you love for quick access</span>
+        <a routerLink="/advertiser/browse" class="btn btn-primary btn-sm">Browse Billboards</a>
+      </div>
+    } @else {
+      <div class="favorites-list">
+        @for (favorite of favorites().slice(0, 3); track favorite.id) {
+          <div class="favorite-item">
+            <div class="fav-image">
+              @if (favorite.billboard && favorite.billboard.imagePaths && favorite.billboard.imagePaths.length > 0) {
+                <img [src]="getImageUrl(favorite.billboard.imagePaths[0])" [alt]="favorite.billboard.title">
+              } @else {
+                <div class="fav-placeholder">🏗️</div>
+              }
+              <span class="fav-type">{{ favorite.billboard.type }}</span>
+            </div>
+            <div class="fav-info">
+              <h4>{{ favorite.billboard.title || 'Untitled Billboard' }}</h4>
+              <p class="fav-location">📍 {{ favorite.billboard.location || 'Location N/A' }}</p>
+              <div class="fav-meta">
+                <span class="fav-price">{{ formatCurrency(favorite.billboard.pricePerDay || 0) }}/day</span>
+                <span class="fav-owner">👤 {{ favorite.billboard.owner?.name }}</span>
+              </div>
+            </div>
+            <div class="fav-actions">
+              <button class="btn btn-sm btn-primary" routerLink="/advertiser/browse">📅 Book</button>
+              <button class="btn btn-sm btn-icon-danger" (click)="removeFromFavorites(favorite.billboard.id)">
+                ❤️
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+      @if (favorites().length > 3) {
+        <div class="favorites-footer">
+          <a routerLink="/advertiser/favorites" class="view-more-link">
+            View all {{ favorites().length }} favorites →
+          </a>
+        </div>
+      }
+    }
+  </div>
+
+</div>

@@ -1,0 +1,945 @@
+<div class="bookings-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="animate-fade-in-up">
+        <span class="header-icon">📅</span>
+        My Bookings
+      </h1>
+      <p class="animate-fade-in-up delay-1">Manage your billboard advertising campaigns</p>
+    </div>
+    <div class="header-actions animate-fade-in-up delay-2">
+      <button class="btn btn-glass" (click)="loadData()">
+        <span class="btn-icon">🔄</span>
+        Refresh
+      </button>
+      <button class="btn btn-primary-glow" (click)="openCreateModal()">
+        <span class="btn-icon">➕</span>
+        New Booking
+      </button>
+    </div>
+  </div>
+
+  <!-- Success/Error Messages -->
+  @if (successMessage()) {
+    <div class="alert alert-success animate-bounce-in">
+      <span class="alert-icon">✅</span>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger animate-bounce-in">
+      <span class="alert-icon">❌</span>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+  }
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card animate-scale-in delay-1" (click)="setStatusFilter('all')">
+      <div class="stat-icon blue">
+        <span>📊</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().total }}</span>
+        <span class="stat-label">Total Bookings</span>
+      </div>
+      <div class="stat-glow blue"></div>
+    </div>
+
+    <div class="stat-card animate-scale-in delay-2" (click)="setStatusFilter('PENDING')">
+      <div class="stat-icon orange">
+        <span>⏳</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+      <div class="stat-glow orange"></div>
+    </div>
+
+    <div class="stat-card animate-scale-in delay-3" (click)="setStatusFilter('APPROVED')">
+      <div class="stat-icon green">
+        <span>✅</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().approved }}</span>
+        <span class="stat-label">Active</span>
+      </div>
+      <div class="stat-glow green"></div>
+    </div>
+
+    <div class="stat-card animate-scale-in delay-4">
+      <div class="stat-icon purple">
+        <span>💰</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ formatCurrency(stats().totalSpent) }}</span>
+        <span class="stat-label">Total Spent</span>
+      </div>
+      <div class="stat-glow purple"></div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="filter-section animate-fade-in-up delay-3">
+    <div class="filter-tabs">
+      <button
+        class="filter-tab"
+        [class.active]="statusFilter() === 'all'"
+        (click)="setStatusFilter('all')"
+      >
+        <span>📋</span> All
+        <span class="tab-count">{{ stats().total }}</span>
+      </button>
+      <button
+        class="filter-tab"
+        [class.active]="statusFilter() === 'PENDING'"
+        (click)="setStatusFilter('PENDING')"
+      >
+        <span>⏳</span> Pending
+        @if (stats().pending > 0) {
+          <span class="tab-count orange">{{ stats().pending }}</span>
+        }
+      </button>
+      <button
+        class="filter-tab"
+        [class.active]="statusFilter() === 'APPROVED'"
+        (click)="setStatusFilter('APPROVED')"
+      >
+        <span>✅</span> Active
+        @if (stats().approved > 0) {
+          <span class="tab-count green">{{ stats().approved }}</span>
+        }
+      </button>
+      <button
+        class="filter-tab"
+        [class.active]="statusFilter() === 'COMPLETED'"
+        (click)="setStatusFilter('COMPLETED')"
+      >
+        <span>🎉</span> Completed
+      </button>
+      <button
+        class="filter-tab"
+        [class.active]="statusFilter() === 'CANCELLED'"
+        (click)="setStatusFilter('CANCELLED')"
+      >
+        <span>🚫</span> Cancelled
+      </button>
+    </div>
+
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search bookings..."
+        [value]="searchTerm()"
+        (input)="onSearch($event)"
+      >
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Loading your bookings...</p>
+      </div>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-container animate-fade-in-up">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <h3>Something went wrong</h3>
+        <p>{{ error() }}</p>
+        <button class="btn btn-primary" (click)="loadData()">
+          Try Again
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading() && !error() && filteredBookings().length === 0) {
+    <div class="empty-state animate-fade-in-up">
+      @if (statusFilter() === 'all' && stats().total === 0) {
+        <div class="empty-icon">📅</div>
+        <h3>No Bookings Yet</h3>
+        <p>Start your advertising journey by booking a billboard!</p>
+        <button class="btn btn-primary-glow" (click)="openCreateModal()">
+          <span>➕</span> Create Your First Booking
+        </button>
+      } @else {
+        <div class="empty-icon">🔍</div>
+        <h3>No Results Found</h3>
+        <p>No bookings match your current filters.</p>
+        <button class="btn btn-outline" (click)="setStatusFilter('all'); searchTerm.set('')">
+          Clear Filters
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Bookings Grid -->
+  @if (!loading() && !error() && filteredBookings().length > 0) {
+    <div class="ubc-grid animate-fade-in-up delay-4">
+      @for (booking of filteredBookings(); track booking.id; let i = $index) {
+        <div class="unified-booking-card" [style.animation-delay]="(i * 0.05) + 's'">
+          <!-- Status Bar -->
+          <div class="ubc-status-bar" [class]="'status-' + booking.status.toLowerCase().replace('_', '-')"></div>
+
+          <!-- Card Header -->
+          <div class="ubc-header">
+            <div class="ubc-header-info">
+              <h3 class="ubc-title">
+                <span class="ubc-booking-id">#{{ booking.id }}</span>
+                {{ booking.billboardTitle || 'Billboard #' + booking.billboardId }}
+              </h3>
+              <p class="ubc-location">
+                <span class="ubc-location-icon">📍</span>
+                {{ booking.billboardLocation || 'Location not specified' }}
+              </p>
+            </div>
+            <div class="ubc-badges">
+              <span class="ubc-badge" [class]="'status-' + booking.status.toLowerCase().replace('_', '-')">
+                <span class="ubc-badge-dot"></span>
+                {{ getStatusLabel(booking.status) }}
+              </span>
+              <span class="ubc-badge" [class]="'payment-' + booking.paymentStatus.toLowerCase().replace('_', '-')">
+                {{ getPaymentStatusIcon(booking.paymentStatus) }} {{ booking.paymentStatus.replace('_', ' ') }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Card Body -->
+          <div class="ubc-body">
+            <div class="ubc-details-grid">
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">📆</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Campaign Period</span>
+                  <span class="ubc-detail-value">{{ formatDate(booking.startDate) }} - {{ formatDate(booking.endDate) }}</span>
+                  <span class="ubc-detail-sub">{{ getDaysDiff(booking.startDate, booking.endDate) }} days</span>
+                </div>
+              </div>
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">👤</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Billboard Owner</span>
+                  <span class="ubc-detail-value">{{ booking.ownerName || 'N/A' }}</span>
+                </div>
+              </div>
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">💰</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Total Amount</span>
+                  <span class="ubc-detail-value amount">
+                    {{ formatCurrency(booking.totalAmount) }}
+                    @if (isPriceSubjectToChange(booking)) {
+                      <span class="price-notice" title="Price may update when you initiate payment">*</span>
+                    }
+                    @if (booking.paymentStatus === 'PAID') {
+                      <span title="Price locked at payment">🔒</span>
+                    }
+                  </span>
+                </div>
+              </div>
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">📅</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Booked On</span>
+                  <span class="ubc-detail-value">{{ formatDate(booking.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Booking Flow Timeline -->
+          <div class="ubc-timeline">
+            @for (step of getBookingFlowSteps(booking); track step.step; let last = $last) {
+              <div class="ubc-step" [class]="step.status">
+                <div class="ubc-step-icon">{{ step.icon }}</div>
+                <div class="ubc-step-label">{{ step.label }}</div>
+                @if (!last) {
+                  <div class="ubc-step-connector"></div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Card Actions -->
+          <div class="ubc-actions">
+            <div class="ubc-actions-left">
+              <button class="ubc-btn ubc-btn-default" (click)="openDetailModal(booking)" title="View Details">
+                <span class="ubc-btn-icon">👁️</span>
+                <span class="ubc-btn-text">Details</span>
+              </button>
+
+              @if (canCancel(booking)) {
+                <button
+                  class="ubc-btn"
+                  [class.ubc-btn-outline-danger]="!isNoRefundCancellation(booking)"
+                  [class.ubc-btn-danger]="isNoRefundCancellation(booking)"
+                  (click)="openCancelModal(booking)"
+                  [disabled]="processing()"
+                  [title]="isNoRefundCancellation(booking) ? 'Cancel (No Refund)' : 'Cancel Booking'"
+                >
+                  <span class="ubc-btn-icon">🚫</span>
+                  <span class="ubc-btn-text">Cancel</span>
+                </button>
+              }
+
+              @if (canPay(booking)) {
+                <button
+                  class="ubc-btn ubc-btn-success"
+                  (click)="initiatePayment(booking)"
+                  [disabled]="paymentProcessing() === booking.id"
+                  [title]="'Pay ' + formatCurrency(booking.totalAmount)"
+                >
+                  @if (paymentProcessing() === booking.id) {
+                    <span class="ubc-spinner"></span>
+                  } @else {
+                    <span class="ubc-btn-icon">💳</span>
+                    <span class="ubc-btn-text">Pay</span>
+                  }
+                </button>
+              }
+            </div>
+
+            <div class="ubc-actions-right">
+              @if (booking.paymentStatus === 'PAID' && booking.status === 'APPROVED') {
+                <span class="ubc-campaign-badge" title="Campaign Active">
+                  <span>🎯</span>
+                  <span class="ubc-btn-text">Active</span>
+                </span>
+              } @else if (booking.paymentStatus === 'PAID') {
+                <span class="ubc-paid-badge" title="Payment Completed">
+                  <span>✅</span>
+                  <span class="ubc-btn-text">Paid</span>
+                </span>
+              }
+
+              @if (canDownloadInvoice(booking)) {
+                <button class="ubc-btn ubc-btn-outline-info" (click)="downloadInvoice(booking)" title="Download Invoice">
+                  <span class="ubc-btn-icon">📄</span>
+                  <span class="ubc-btn-text">Invoice</span>
+                </button>
+                <button class="ubc-btn ubc-btn-outline-warning" (click)="openInvoiceModal(booking)" title="View GST Invoice">
+                  <span class="ubc-btn-icon">🧾</span>
+                  <span class="ubc-btn-text">GST</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Create Booking Modal - Outside main container for proper fixed positioning -->
+@if (showCreateModal()) {
+  <div class="modal-overlay" (click)="closeCreateModal()">
+    <div class="modal-container create-modal animate-scale-in" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon create-icon">
+          <span>📅</span>
+        </div>
+        <h2>Create New Booking</h2>
+        <button class="modal-close" (click)="closeCreateModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Step 1: Select Billboard -->
+        <div class="form-section">
+          <h4>
+            <span class="step-number">1</span>
+            Select Billboard
+          </h4>
+
+          @if (billboards().length === 0) {
+            <div class="no-billboards">
+              <p>No billboards available at the moment.</p>
+              <a routerLink="/advertiser/browse" class="browse-link">Browse All Billboards</a>
+            </div>
+          } @else {
+            <div class="billboard-select-grid">
+              @for (billboard of billboards(); track billboard.id) {
+                <div
+                  class="billboard-select-card"
+                  [class.selected]="selectedBillboard()?.id === billboard.id"
+                  (click)="selectBillboard(billboard)"
+                >
+                  <div class="billboard-select-image">
+                    <img [src]="getBillboardImage(billboard)" alt="Billboard" loading="lazy">
+                    <div class="billboard-type-badge">
+                      {{ getBillboardTypeIcon(billboard.billboardType || 'STATIC') }}
+                      {{ billboard.billboardType || 'STATIC' }}
+                    </div>
+                  </div>
+                  <div class="billboard-select-info">
+                    <h5>{{ billboard.title || 'Billboard #' + billboard.id }}</h5>
+                    <p class="location">📍 {{ billboard.location || 'N/A' }}</p>
+                    <p class="price">{{ formatCurrency(billboard.pricePerDay || 0) }}/day</p>
+                  </div>
+                  @if (selectedBillboard()?.id === billboard.id) {
+                    <div class="selected-check">✓</div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Step 2: Select Dates with Availability Calendar -->
+        @if (selectedBillboard()) {
+          <div class="form-section">
+            <h4>
+              <span class="step-number">2</span>
+              Select Campaign Dates
+            </h4>
+
+            <!-- Availability Calendar Component -->
+            <div class="availability-calendar-wrapper">
+              <app-availability-calendar
+                [billboardId]="selectedBillboard()!.id"
+                [startDate]="bookingStartDate"
+                [endDate]="bookingEndDate"
+                (dateSelected)="onCalendarDateSelected($event)"
+                (availabilityLoaded)="onAvailabilityLoaded($event)">
+              </app-availability-calendar>
+            </div>
+
+            <!-- Selected Dates Display -->
+            @if (bookingStartDate && bookingEndDate) {
+              <div class="selected-dates-display">
+                <div class="selected-date-item">
+                  <span class="date-label">Start Date</span>
+                  <span class="date-value">{{ formatDate(bookingStartDate) }}</span>
+                </div>
+                <div class="date-arrow">→</div>
+                <div class="selected-date-item">
+                  <span class="date-label">End Date</span>
+                  <span class="date-value">{{ formatDate(bookingEndDate) }}</span>
+                </div>
+                <div class="selected-date-item days">
+                  <span class="date-label">Duration</span>
+                  <span class="date-value">{{ calculatedDays() }} days</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Step 3: Summary -->
+        @if (selectedBillboard() && bookingStartDate && bookingEndDate) {
+          <div class="form-section summary-section">
+            <h4>
+              <span class="step-number">3</span>
+              Booking Summary
+            </h4>
+
+            <!-- Loading state for price preview -->
+            @if (pricePreviewLoading()) {
+              <div class="price-loading" style="text-align: center; padding: 20px;">
+                <div class="spinner" style="margin: 0 auto;"></div>
+                <p style="margin-top: 10px; color: #666;">Calculating prices...</p>
+              </div>
+            } @else if (pricePreviewError()) {
+              <div class="price-error" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; color: #dc2626;">
+                {{ pricePreviewError() }}
+              </div>
+            } @else {
+              <div class="booking-summary">
+                <div class="summary-row">
+                  <span>Billboard</span>
+                  <strong>{{ selectedBillboard()!.title || 'Billboard #' + selectedBillboard()!.id }}</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Location</span>
+                  <strong>{{ selectedBillboard()!.location || 'N/A' }}</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Duration</span>
+                  <strong>{{ calculatedDays() }} days</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Rate per Day</span>
+                  <strong>{{ formatCurrency(selectedBillboard()!.pricePerDay || 0) }}</strong>
+                </div>
+
+                <!-- Price Breakdown from Backend -->
+                <div class="price-breakdown" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e0e0e0;">
+                  <!-- Original Base Amount -->
+                  <div class="summary-row">
+                    <span>Billboard Rent</span>
+                    <strong>{{ formatCurrency(originalBaseAmount() || calculatedBaseAmount()) }}</strong>
+                  </div>
+
+                  <!-- Discount (if any) -->
+                  @if (calculatedDiscountPercent() > 0) {
+                    <div class="summary-row discount-row" style="color: #16a34a; font-size: 0.9em;">
+                      <span>Discount ({{ calculatedDiscountPercent() }}%)</span>
+                      <strong>- {{ formatCurrency(calculatedDiscount()) }}</strong>
+                    </div>
+                    <div class="summary-row" style="font-size: 0.9em;">
+                      <span>After Discount</span>
+                      <strong>{{ formatCurrency(calculatedBaseAmount()) }}</strong>
+                    </div>
+                  }
+
+                  <!-- Commission from Backend -->
+                  <div class="summary-row" style="color: #666; font-size: 0.9em;">
+                    <span>Platform Fee ({{ pricePreview()?.commissionPercent || 15 }}%)</span>
+                    <strong>+ {{ formatCurrency(calculatedCommission()) }}</strong>
+                  </div>
+
+                  <!-- GST from Backend -->
+                  <div class="summary-row" style="color: #666; font-size: 0.9em;">
+                    <span>GST ({{ pricePreview()?.gstPercent || 18 }}%)</span>
+                    <strong>+ {{ formatCurrency(calculatedGst()) }}</strong>
+                  </div>
+                </div>
+
+                <div class="summary-row total" style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #333;">
+                  <span>Total Payable</span>
+                  <strong class="total-amount">{{ formatCurrency(calculatedTotal()) }}</strong>
+                </div>
+
+                <!-- Smart Pricing Notice -->
+                @if (pricePreview()?.demandSurgeApplied || pricePreview()?.weekendSurgeApplied) {
+                  <div class="pricing-notice" style="margin-top: 10px; padding: 8px 12px; background: #fef3c7; border-radius: 6px; font-size: 0.85em; color: #92400e;">
+                    @if (pricePreview()?.demandSurgeApplied) {
+                      <span>📈 High demand pricing applied</span>
+                    }
+                    @if (pricePreview()?.weekendSurgeApplied) {
+                      <span>📅 Weekend pricing applied</span>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Negotiation Section - Contact Owner for Discount -->
+              <div class="negotiation-section">
+                <div class="negotiation-header">
+                  <div class="negotiation-icon">💰</div>
+                  <div class="negotiation-title">
+                    <h5>Want a Better Deal? Negotiate with Owner!</h5>
+                    <p class="discount-badge">Up to <strong>{{ pricePreview()?.maxDiscountPercent || 50 }}% OFF</strong> possible</p>
+                  </div>
+                </div>
+
+                <p class="negotiation-desc">
+                  Contact the billboard owner directly to negotiate a discount before creating your booking.
+                  Once you create the booking, the owner can apply discounts based on your discussion.
+                </p>
+
+                @if (pricePreview()?.ownerName) {
+                  <div class="owner-contact-card">
+                    <div class="owner-info">
+                      <div class="owner-avatar">
+                        {{ pricePreview()?.ownerName?.charAt(0)?.toUpperCase() || 'O' }}
+                      </div>
+                      <div class="owner-details">
+                        <span class="owner-name">{{ pricePreview()!.ownerName }}</span>
+                        <span class="owner-label">Billboard Owner</span>
+                      </div>
+                    </div>
+
+                    <div class="contact-actions">
+                      @if (pricePreview()?.ownerPhone) {
+                        <a href="tel:{{ pricePreview()!.ownerPhone }}" class="contact-btn contact-btn-call">
+                          <span class="contact-btn-icon">📞</span>
+                          <span class="contact-btn-text">{{ pricePreview()!.ownerPhone }}</span>
+                        </a>
+                      }
+                      @if (pricePreview()?.ownerEmail) {
+                        <a href="mailto:{{ pricePreview()!.ownerEmail }}?subject=Discount Inquiry for {{ selectedBillboard()?.title }}&body=Hi {{ pricePreview()!.ownerName }},%0D%0A%0D%0AI am interested in booking your billboard '{{ selectedBillboard()?.title }}' from {{ bookingStartDate }} to {{ bookingEndDate }}.%0D%0A%0D%0ACould you please offer a discount on this booking?%0D%0A%0D%0AThank you!" class="contact-btn contact-btn-email">
+                          <span class="contact-btn-icon">✉️</span>
+                          <span class="contact-btn-text">{{ pricePreview()!.ownerEmail }}</span>
+                        </a>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="owner-contact-unavailable">
+                    <span class="unavailable-icon">ℹ️</span>
+                    <span>Owner contact info will be available after selecting dates</span>
+                  </div>
+                }
+
+                <div class="negotiation-tip">
+                  <span class="tip-icon">💡</span>
+                  <span class="tip-text">
+                    <strong>Pro Tip:</strong> Create the booking first, then the owner will review and can apply a discount before you make payment. You only pay after approving the final price!
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeCreateModal()" [disabled]="processing()">
+          Cancel
+        </button>
+        <button
+          class="btn btn-success"
+          (click)="confirmCreateBooking()"
+          [disabled]="!selectedBillboard() || !bookingStartDate || !bookingEndDate || processing()"
+        >
+          @if (processing()) {
+            <span class="btn-spinner"></span> Creating...
+          } @else {
+            <span>📅</span> Create Booking
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Booking Detail Modal -->
+@if (showDetailModal() && selectedBooking()) {
+  <div class="modal-overlay" (click)="closeDetailModal()">
+    <div class="modal-container detail-modal animate-scale-in" (click)="$event.stopPropagation()">
+      <div class="modal-header detail-header" [class]="'status-bg-' + selectedBooking()!.status.toLowerCase().replace('_', '-')">
+        <div class="detail-status-badge">
+          {{ getStatusIcon(selectedBooking()!.status) }} {{ getStatusLabel(selectedBooking()!.status) }}
+        </div>
+        <h2>Booking #{{ selectedBooking()!.id }}</h2>
+        <p>{{ selectedBooking()!.billboardTitle }}</p>
+        <button class="modal-close" (click)="closeDetailModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-icon">📍</span>
+            <div class="detail-content">
+              <label>Location</label>
+              <span>{{ selectedBooking()!.billboardLocation || 'Not specified' }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon">👤</span>
+            <div class="detail-content">
+              <label>Owner</label>
+              <span>{{ selectedBooking()!.ownerName || 'N/A' }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon">📆</span>
+            <div class="detail-content">
+              <label>Start Date</label>
+              <span>{{ formatDate(selectedBooking()!.startDate) }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon">📆</span>
+            <div class="detail-content">
+              <label>End Date</label>
+              <span>{{ formatDate(selectedBooking()!.endDate) }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon">⏱️</span>
+            <div class="detail-content">
+              <label>Duration</label>
+              <span>{{ getDaysDiff(selectedBooking()!.startDate, selectedBooking()!.endDate) }} days</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon">💰</span>
+            <div class="detail-content">
+              <label>Total Amount</label>
+              <span class="amount-large">
+                {{ formatCurrency(selectedBooking()!.totalAmount) }}
+                @if (selectedBooking()!.paymentStatus === 'PAID') {
+                  <span class="locked-badge" title="Price locked at payment">🔒</span>
+                }
+              </span>
+              @if (isPriceSubjectToChange(selectedBooking()!)) {
+                <span class="price-update-note">* Final price calculated at payment</span>
+              }
+            </div>
+          </div>
+
+          <!-- Price Breakdown for detail view -->
+          <div class="detail-item full-width">
+            <span class="detail-icon">📊</span>
+            <div class="detail-content">
+              <label>Price Breakdown</label>
+              <div class="price-breakdown-detail">
+                <!-- Original Base Amount -->
+                @if (selectedBooking()!.originalBaseAmount && selectedBooking()!.discountPercent && (selectedBooking()!.discountPercent || 0) > 0) {
+                  <div class="breakdown-row">
+                    <span>Original Amount</span>
+                    <span>{{ formatCurrency(selectedBooking()!.originalBaseAmount || 0) }}</span>
+                  </div>
+                  <div class="breakdown-row discount" style="color: #16a34a;">
+                    <span>Discount ({{ selectedBooking()!.discountPercent }}%)</span>
+                    <span>- {{ formatCurrency(selectedBooking()!.discountAmount || 0) }}</span>
+                  </div>
+                  <div class="breakdown-row">
+                    <span><strong>Base Amount (After Discount)</strong></span>
+                    <span><strong>{{ formatCurrency(selectedBooking()!.baseAmount) }}</strong></span>
+                  </div>
+                } @else {
+                  <div class="breakdown-row">
+                    <span>Base Amount (Owner's Share)</span>
+                    <span>{{ formatCurrency(selectedBooking()!.baseAmount) }}</span>
+                  </div>
+                }
+                <div class="breakdown-row">
+                  <span>Platform Fee ({{ getDisplayCommissionPercent(selectedBooking()!) }}%)</span>
+                  <span>{{ formatCurrency(selectedBooking()!.commissionAmount) }}</span>
+                </div>
+                <div class="breakdown-row">
+                  <span>GST ({{ selectedBooking()!.gstPercentage || 18 }}%)</span>
+                  <span>{{ formatCurrency(selectedBooking()!.gstAmount) }}</span>
+                </div>
+                <div class="breakdown-row total">
+                  <span>Total</span>
+                  <span>{{ formatCurrency(selectedBooking()!.totalAmount) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discount Applied Banner -->
+          @if (selectedBooking()!.discountPercent && (selectedBooking()!.discountPercent || 0) > 0) {
+            <div class="detail-item full-width">
+              <span class="detail-icon">🏷️</span>
+              <div class="detail-content">
+                <label>Discount Applied</label>
+                <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); padding: 12px; border-radius: 8px; border: 1px solid #86efac;">
+                  <span style="color: #166534; font-weight: 600; font-size: 1.1em;">
+                    {{ selectedBooking()!.discountPercent }}% OFF - You saved {{ formatCurrency(selectedBooking()!.discountAmount || 0) }}!
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <div class="detail-item full-width">
+            <span class="detail-icon">💳</span>
+            <div class="detail-content">
+              <label>Payment Status</label>
+              <span class="payment-badge large" [class]="'payment-' + selectedBooking()!.paymentStatus.toLowerCase().replace('_', '-')">
+                {{ getPaymentStatusIcon(selectedBooking()!.paymentStatus) }}
+                {{ selectedBooking()!.paymentStatus.replace('_', ' ') }}
+              </span>
+            </div>
+          </div>
+
+          @if (selectedBooking()!.paymentDate) {
+            <div class="detail-item full-width">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <label>Payment Date</label>
+                <span>{{ formatDateTime(selectedBooking()!.paymentDate!) }}</span>
+              </div>
+            </div>
+          }
+
+          <div class="detail-item full-width">
+            <span class="detail-icon">🕐</span>
+            <div class="detail-content">
+              <label>Booking Created</label>
+              <span>{{ formatDateTime(selectedBooking()!.createdAt) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeDetailModal()">
+          Close
+        </button>
+        @if (canCancel(selectedBooking()!)) {
+          <button
+            class="btn btn-danger"
+            [class.btn-danger-severe]="isNoRefundCancellation(selectedBooking()!)"
+            (click)="closeDetailModal(); openCancelModal(selectedBooking()!)"
+          >
+            <span>🚫</span>
+            @if (isNoRefundCancellation(selectedBooking()!)) {
+              Cancel (No Refund)
+            } @else {
+              Cancel Booking
+            }
+          </button>
+        }
+        @if (canPay(selectedBooking()!)) {
+          <button
+            class="btn btn-success"
+            (click)="initiatePayment(selectedBooking()!)"
+            [disabled]="paymentProcessing() === selectedBooking()!.id"
+          >
+            @if (paymentProcessing() === selectedBooking()!.id) {
+              <span class="btn-spinner"></span> Processing...
+            } @else {
+              <span>💳</span> Pay Now
+            }
+          </button>
+        }
+        @if (canDownloadInvoice(selectedBooking()!)) {
+          <button class="btn btn-invoice" (click)="downloadInvoice(selectedBooking()!)">
+            <span>📄</span> Invoice
+          </button>
+          <button class="btn btn-gst-invoice" (click)="closeDetailModal(); openInvoiceModal(selectedBooking()!)">
+            <span>🧾</span> View GST Invoice
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Cancel Confirmation Modal -->
+@if (showCancelModal() && selectedBooking()) {
+  <div class="modal-overlay" (click)="closeCancelModal()">
+    <div class="modal-container cancel-modal animate-scale-in" [class.no-refund-modal]="isNoRefundCancellation(selectedBooking()!)" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon warning-icon" [class.danger-icon]="isNoRefundCancellation(selectedBooking()!)">
+          @if (isNoRefundCancellation(selectedBooking()!)) {
+            <span>💸</span>
+          } @else {
+            <span>⚠️</span>
+          }
+        </div>
+        <h2>
+          @if (isNoRefundCancellation(selectedBooking()!)) {
+            Cancel Booking - NO REFUND
+          } @else {
+            Cancel Booking
+          }
+        </h2>
+        <button class="modal-close" (click)="closeCancelModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        @if (isNoRefundCancellation(selectedBooking()!)) {
+          <!-- NO REFUND WARNING - Prominent display -->
+          <div class="no-refund-banner">
+            <div class="no-refund-icon">🚫💰</div>
+            <div class="no-refund-content">
+              <h3>NO REFUND POLICY</h3>
+              <p>You have already paid <strong>{{ formatCurrency(selectedBooking()!.totalAmount) }}</strong> for this booking.</p>
+              <p class="highlight">This amount will NOT be refunded if you cancel.</p>
+            </div>
+          </div>
+        } @else {
+          <p>Are you sure you want to cancel this booking?</p>
+        }
+
+        <div class="booking-preview">
+          <div class="preview-header">
+            <h4>{{ selectedBooking()!.billboardTitle }}</h4>
+            <span class="preview-id">Booking #{{ selectedBooking()!.id }}</span>
+          </div>
+          <div class="preview-details">
+            <div class="preview-item">
+              <span>📍</span>
+              {{ selectedBooking()!.billboardLocation || 'N/A' }}
+            </div>
+            <div class="preview-item">
+              <span>📆</span>
+              {{ formatDate(selectedBooking()!.startDate) }} - {{ formatDate(selectedBooking()!.endDate) }}
+            </div>
+            <div class="preview-item">
+              <span>💰</span>
+              {{ formatCurrency(selectedBooking()!.totalAmount) }}
+              @if (isNoRefundCancellation(selectedBooking()!)) {
+                <span class="paid-indicator">PAID</span>
+              }
+            </div>
+            <div class="preview-item">
+              <span>💳</span>
+              Payment: {{ selectedBooking()!.paymentStatus.replace('_', ' ') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="cancel-warning" [class.severe]="isNoRefundCancellation(selectedBooking()!)">
+          @if (isNoRefundCancellation(selectedBooking()!)) {
+            <span class="warning-icon">⛔</span>
+            <div class="warning-text">
+              <p><strong>FINAL WARNING:</strong> By cancelling this booking:</p>
+              <ul>
+                <li>You will lose your payment of {{ formatCurrency(selectedBooking()!.totalAmount) }}</li>
+                <li>The billboard will become available for others</li>
+                <li>This action cannot be undone</li>
+              </ul>
+            </div>
+          } @else {
+            <span class="warning-icon">⚠️</span>
+            <p>This action cannot be undone. The billboard will become available for other advertisers to book.</p>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeCancelModal()" [disabled]="processing()">
+          @if (isNoRefundCancellation(selectedBooking()!)) {
+            Keep My Booking
+          } @else {
+            Keep Booking
+          }
+        </button>
+        <button class="btn btn-danger" [class.btn-danger-severe]="isNoRefundCancellation(selectedBooking()!)" (click)="confirmCancel()" [disabled]="processing()">
+          @if (processing()) {
+            <span class="btn-spinner"></span> Cancelling...
+          } @else if (isNoRefundCancellation(selectedBooking()!)) {
+            <span>⛔</span> Cancel Without Refund
+          } @else {
+            <span>🚫</span> Confirm Cancel
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- GST Invoice Modal -->
+@if (showInvoiceModal() && invoiceData()) {
+  <div class="modal-overlay invoice-modal-overlay" (click)="closeInvoiceModal()">
+    <div class="modal-container invoice-modal animate-scale-in" (click)="$event.stopPropagation()">
+      <div class="modal-header invoice-modal-header">
+        <h2>
+          <span>🧾</span> GST Tax Invoice
+        </h2>
+        <button class="modal-close" (click)="closeInvoiceModal()">×</button>
+      </div>
+
+      <div class="modal-body invoice-modal-body">
+        <app-invoice [invoiceData]="invoiceData()!" [showActions]="true"></app-invoice>
+      </div>
+
+      <div class="modal-footer invoice-modal-footer no-print">
+        <button class="btn btn-outline" (click)="closeInvoiceModal()">
+          Close
+        </button>
+        <button class="btn btn-primary" (click)="downloadGstInvoice(selectedBooking()!)">
+          <span>📥</span> Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+}

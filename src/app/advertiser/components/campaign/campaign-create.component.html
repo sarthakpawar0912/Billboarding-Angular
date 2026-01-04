@@ -1,0 +1,160 @@
+<div class="campaign-create-page">
+  <!-- Compact Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <a routerLink="/advertiser/campaigns" class="back-link">
+        <span>←</span> Back to Campaigns
+      </a>
+      <h1><span>➕</span> Create New Campaign</h1>
+    </div>
+  </div>
+
+  <!-- Alert Messages -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <span>✅</span> {{ successMessage() }}
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <span>❌</span> {{ errorMessage() }}
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+  }
+
+  <!-- Compact Form Card -->
+  <div class="form-card">
+    <form (ngSubmit)="submitForm()">
+      <div class="form-grid">
+        <!-- Left Column -->
+        <div class="form-column">
+          <!-- Campaign Name -->
+          <div class="form-group">
+            <label for="campaignName">
+              <span>📝</span> Campaign Name <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="campaignName"
+              [(ngModel)]="campaignName"
+              name="campaignName"
+              placeholder="e.g., Summer Sale 2025"
+              required
+              minlength="3"
+              maxlength="100">
+          </div>
+
+          <!-- Budget -->
+          <div class="form-group">
+            <label for="budget">
+              <span>💰</span> Budget (INR) <span class="required">*</span>
+            </label>
+            <div class="input-with-prefix">
+              <span class="prefix">₹</span>
+              <input
+                type="number"
+                id="budget"
+                [(ngModel)]="budget"
+                name="budget"
+                placeholder="Enter amount"
+                [min]="1000"
+                step="1000"
+                required>
+            </div>
+            @if (budget && budget >= 1000) {
+              <span class="input-hint">{{ formatCurrency(budget) }}</span>
+            }
+          </div>
+
+          <!-- Date Range -->
+          <div class="form-group">
+            <label><span>📅</span> Campaign Period <span class="required">*</span></label>
+            <div class="date-inputs">
+              <input
+                type="date"
+                [(ngModel)]="startDate"
+                name="startDate"
+                [min]="today"
+                required>
+              <span class="date-separator">to</span>
+              <input
+                type="date"
+                [(ngModel)]="endDate"
+                name="endDate"
+                [min]="startDate || today"
+                required>
+            </div>
+            @if (startDate && endDate && getDuration() > 0) {
+              <span class="input-hint">Duration: {{ getDuration() }} days</span>
+            }
+          </div>
+        </div>
+
+        <!-- Right Column - Cities -->
+        <div class="form-column">
+          <div class="form-group cities-group">
+            <label><span>📍</span> Target Cities <span class="required">*</span></label>
+
+            <div class="cities-selector">
+              <div class="city-chips">
+                @for (city of citySuggestions; track city) {
+                  <button
+                    type="button"
+                    class="city-chip"
+                    [class.selected]="isCitySelected(city)"
+                    (click)="toggleCity(city)">
+                    @if (isCitySelected(city)) {
+                      <span class="check">✓</span>
+                    }
+                    {{ city }}
+                  </button>
+                }
+              </div>
+
+              <!-- Selected Count -->
+              <div class="selected-count">
+                <span class="count-badge">{{ cities.length }}</span> cities selected
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Section: Summary + Actions -->
+      <div class="form-footer">
+        @if (isFormValid()) {
+          <div class="summary">
+            <span class="summary-item"><strong>{{ campaignName }}</strong></span>
+            <span class="summary-divider">•</span>
+            <span class="summary-item">{{ formatCurrency(budget!) }}</span>
+            <span class="summary-divider">•</span>
+            <span class="summary-item">{{ getDuration() }} days</span>
+            <span class="summary-divider">•</span>
+            <span class="summary-item">{{ cities.length }} cities</span>
+          </div>
+        }
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-outline"
+            (click)="cancel()"
+            [disabled]="isSubmitting()">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!isFormValid() || isSubmitting()">
+            @if (isSubmitting()) {
+              <span class="spinner"></span> Creating...
+            } @else {
+              <span>➕</span> Create Campaign
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

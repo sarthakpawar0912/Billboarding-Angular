@@ -1,0 +1,118 @@
+<div class="owner-calendar">
+  <!-- Header -->
+  <div class="calendar-header">
+    <button class="nav-btn" (click)="previousMonth()" title="Previous Month">
+      <span>&lt;</span>
+    </button>
+    <div class="month-year">
+      <span>{{ getMonthYearDisplay() }}</span>
+      <button class="today-btn" (click)="goToToday()" title="Go to Today">Today</button>
+    </div>
+    <button class="nav-btn" (click)="nextMonth()" title="Next Month">
+      <span>&gt;</span>
+    </button>
+  </div>
+
+  <!-- Month Stats -->
+  <div class="month-stats">
+    <div class="stat-item revenue">
+      <span class="stat-icon">💰</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ formatCurrency(monthStats().totalRevenue) }}</span>
+        <span class="stat-label">This Month</span>
+      </div>
+    </div>
+    <div class="stat-item booked">
+      <span class="stat-icon">📅</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ monthStats().bookedDays }}</span>
+        <span class="stat-label">Booked Days</span>
+      </div>
+    </div>
+    <div class="stat-item pending">
+      <span class="stat-icon">⏳</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ monthStats().pendingDays }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-item available">
+      <span class="stat-icon">✅</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ monthStats().availableDays }}</span>
+        <span class="stat-label">Available</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="calendar-legend">
+    <div class="legend-item">
+      <span class="legend-dot available"></span>
+      <span>Available</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot booked"></span>
+      <span>Booked</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot pending"></span>
+      <span>Pending</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="calendar-loading">
+      <div class="spinner-small"></div>
+      <span>Loading calendar...</span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="calendar-error">
+      <span class="error-icon">!</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Calendar Grid -->
+  <div class="calendar-grid">
+    <!-- Day names header -->
+    <div class="calendar-weekdays">
+      @for (dayName of dayNames; track dayName) {
+        <div class="weekday">{{ dayName }}</div>
+      }
+    </div>
+
+    <!-- Weeks -->
+    <div class="calendar-weeks">
+      @for (week of weeks(); track $index) {
+        <div class="calendar-week">
+          @for (day of week.days; track day.date.getTime()) {
+            <div
+              class="{{ getDayClasses(day) }}"
+              [title]="getTooltip(day)">
+              <span class="day-number">{{ day.dayOfMonth }}</span>
+              @if (getDayRevenue(day)) {
+                <span class="day-revenue">{{ getDayRevenue(day) }}</span>
+              }
+              @if (day.status === 'PENDING' && day.isCurrentMonth) {
+                <span class="status-indicator pending">!</span>
+              }
+              @if (day.status === 'BOOKED' && day.isCurrentMonth) {
+                <span class="status-indicator booked">$</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="calendar-instructions">
+    <p>Green = Available | Red = Booked (earning revenue) | Yellow = Pending approval</p>
+  </div>
+</div>

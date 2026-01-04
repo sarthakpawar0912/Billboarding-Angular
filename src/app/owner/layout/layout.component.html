@@ -1,0 +1,158 @@
+<div class="layout-container" [class.sidebar-collapsed]="sidebarCollapsed()">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <!-- Brand Header -->
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <span class="logo-icon">🏗️</span>
+        @if (!sidebarCollapsed()) {
+          <span class="logo-text">Billboard<span class="logo-highlight">Owner</span></span>
+        }
+      </div>
+      <button class="collapse-btn" (click)="toggleSidebar()">
+        {{ sidebarCollapsed() ? '→' : '←' }}
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <!-- Overview Section -->
+      <div class="nav-section">
+        @if (!sidebarCollapsed()) {
+          <span class="nav-section-title">Overview</span>
+        }
+        <a routerLink="/owner/dashboard" routerLinkActive="active" class="nav-link" title="Dashboard">
+          <span class="nav-icon">📊</span>
+          @if (!sidebarCollapsed()) {
+            <span class="nav-text">Dashboard</span>
+          }
+        </a>
+        <a routerLink="/owner/earnings" routerLinkActive="active" class="nav-link" title="Earnings">
+          <span class="nav-icon">💰</span>
+          @if (!sidebarCollapsed()) {
+            <span class="nav-text">Earnings</span>
+          }
+        </a>
+      </div>
+
+      <!-- Assets Section -->
+      <div class="nav-section">
+        @if (!sidebarCollapsed()) {
+          <span class="nav-section-title">My Assets</span>
+        }
+        <a routerLink="/owner/billboards" routerLinkActive="active" class="nav-link" title="My Billboards">
+          <span class="nav-icon">🎯</span>
+          @if (!sidebarCollapsed()) {
+            <span class="nav-text">My Billboards</span>
+          }
+        </a>
+      </div>
+
+      <!-- Business Section -->
+      <div class="nav-section">
+        @if (!sidebarCollapsed()) {
+          <span class="nav-section-title">Business</span>
+        }
+        <a routerLink="/owner/bookings" routerLinkActive="active" class="nav-link" title="Bookings">
+          <span class="nav-icon">📅</span>
+          @if (!sidebarCollapsed()) {
+            <span class="nav-text">Bookings</span>
+            <span class="nav-badge pending">5</span>
+          }
+        </a>
+        <a routerLink="/owner/wallet" routerLinkActive="active" class="nav-link" title="Wallet">
+          <span class="nav-icon">💳</span>
+          @if (!sidebarCollapsed()) {
+            <span class="nav-text">Wallet</span>
+          }
+        </a>
+      </div>
+
+      <!-- Settings Section -->
+      <div class="nav-section">
+        @if (!sidebarCollapsed()) {
+          <span class="nav-section-title">Account</span>
+        }
+        <a routerLink="/owner/settings" routerLinkActive="active" class="nav-link" title="Settings">
+          <span class="nav-icon">⚙️</span>
+          @if (!sidebarCollapsed()) {
+            <span class="nav-text">Settings</span>
+          }
+        </a>
+      </div>
+    </nav>
+
+    <!-- User Profile Section -->
+    <div class="sidebar-footer">
+      @if (!sidebarCollapsed()) {
+        <div class="user-card">
+          <div class="user-avatar-wrapper">
+            @if (profileImageUrl()) {
+              <img [src]="profileImageUrl()" alt="User" class="user-avatar">
+            } @else {
+              <div class="user-avatar-fallback">{{ (currentUser()?.name || 'O').charAt(0).toUpperCase() }}</div>
+            }
+          </div>
+          <div class="user-info">
+            <span class="user-name">{{ currentUser()?.name || 'Owner' }}</span>
+            <span class="user-role">Billboard Owner</span>
+          </div>
+        </div>
+      }
+      <button class="logout-btn" (click)="logout()" title="Logout">
+        <span class="logout-icon">🚪</span>
+        @if (!sidebarCollapsed()) {
+          <span>Logout</span>
+        }
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-area">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <button class="menu-toggle" (click)="toggleSidebar()">☰</button>
+        <div class="header-title">
+          <h1>Owner Portal</h1>
+          <span class="header-subtitle">Manage Your Billboards</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search billboards...">
+        </div>
+        <div class="header-actions">
+          <button class="action-btn" title="Notifications">
+            🔔
+            <span class="badge">2</span>
+          </button>
+          <button class="action-btn" title="Email Inbox" (click)="navigateToInbox()">
+            📧
+            @if (emailService.hasUnread()) {
+              <span class="badge email-badge">{{ emailService.unreadCount() }}</span>
+            }
+          </button>
+        </div>
+        <div class="header-profile">
+          <div class="header-avatar-wrapper">
+            @if (profileImageUrl()) {
+              <img [src]="profileImageUrl()" alt="User">
+            } @else {
+              <div class="header-avatar-fallback">{{ (currentUser()?.name || 'O').charAt(0).toUpperCase() }}</div>
+            }
+          </div>
+          <span class="profile-name">{{ currentUser()?.name || 'Owner' }}</span>
+          <span class="profile-dropdown">▼</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

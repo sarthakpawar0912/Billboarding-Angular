@@ -1,0 +1,274 @@
+<div class="twofa-settings-container">
+  <!-- Admin Blocked Warning -->
+  @if (isAdminBlocked()) {
+    <div class="admin-blocked-warning">
+      <div class="warning-content">
+        <span class="warning-icon">🔒</span>
+        <div class="warning-text">
+          <h3>Admin Security Settings</h3>
+          <p>Admin users cannot manage their own 2FA using standard user APIs.</p>
+          <p>Please use the admin-specific security settings available in your admin dashboard.</p>
+        </div>
+      </div>
+    </div>
+  } @else {
+  <!-- Recovery Codes Modal -->
+  @if (showRecoveryCodes()) {
+    <app-recovery-codes (closeModal)="onRecoveryCodesClose()"></app-recovery-codes>
+  }
+
+  <div class="settings-header">
+    <h2>Two-Factor Authentication</h2>
+    <p>Add an extra layer of security to your account</p>
+  </div>
+
+  <!-- Admin-Forced 2FA Warning (only shows when admin has enforced 2FA) -->
+  @if (forceTwoFactor()) {
+    <div class="alert alert-warning">
+      <span class="alert-icon">🔒</span>
+      <div>
+        <strong>Administrator Enforced</strong>
+        <p>Two-factor authentication is required by your administrator and cannot be disabled.</p>
+      </div>
+    </div>
+  }
+
+  <!-- Alerts -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-section">
+      <div class="spinner-large"></div>
+      <p>Loading security settings...</p>
+    </div>
+  } @else {
+    <!-- Current Status -->
+    <div class="current-status">
+      <div class="status-header">
+        <h3>Current Status</h3>
+        <span class="status-badge" [class.enabled]="currentMethod() !== 'NONE'">
+          {{ currentMethod() !== 'NONE' ? 'Enabled' : 'Disabled' }}
+        </span>
+      </div>
+      <div class="status-info">
+        <span class="status-icon">{{ getMethodIcon(currentMethod()) }}</span>
+        <div class="status-text">
+          <strong>{{ getMethodDisplayName(currentMethod()) }}</strong>
+          <p>{{ getMethodDescription(currentMethod()) }}</p>
+        </div>
+      </div>
+    </div>
+
+  <!-- 2FA Methods -->
+  <div class="methods-section">
+    <h3>Available Methods</h3>
+    <div class="methods-grid">
+      <!-- Email OTP -->
+      <div class="method-card" [class.active]="currentMethod() === 'EMAIL_OTP'">
+        <div class="method-header">
+          <span class="method-icon">📧</span>
+          <h4>Email OTP</h4>
+          @if (currentMethod() === 'EMAIL_OTP') {
+            <span class="method-status-badge enabled">Active</span>
+          } @else {
+            <span class="method-status-badge disabled">Disabled</span>
+          }
+        </div>
+        <p class="method-description">
+          Receive a one-time password via email each time you log in
+        </p>
+        <div class="method-features">
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <span>No additional apps needed</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <span>Valid for 5 minutes</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <span>Easy to use</span>
+          </div>
+        </div>
+
+        <!-- Toggle Buttons -->
+        <div class="method-actions">
+          @if (currentMethod() === 'EMAIL_OTP') {
+            <!-- Disable Button when active -->
+            <button
+              class="method-btn-disable"
+              [disabled]="isUpdating() || forceTwoFactor()"
+              (click)="disable2FA()">
+              @if (isUpdating()) {
+                <span class="spinner"></span>
+                <span>Disabling...</span>
+              } @else if (forceTwoFactor()) {
+                <span>🔒 Required by Admin</span>
+              } @else {
+                <span>Disable Email OTP</span>
+              }
+            </button>
+          } @else {
+            <!-- Enable Button when inactive -->
+            <button
+              class="method-btn"
+              [disabled]="isUpdating()"
+              (click)="selectMethod('EMAIL_OTP')">
+              @if (isUpdating()) {
+                <span class="spinner"></span>
+                <span>Enabling...</span>
+              } @else {
+                <span>Enable Email OTP</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Magic Link -->
+      <div class="method-card" [class.active]="currentMethod() === 'MAGIC_LINK'">
+        <div class="method-header">
+          <span class="method-icon">🔗</span>
+          <h4>Magic Link</h4>
+          @if (currentMethod() === 'MAGIC_LINK') {
+            <span class="method-status-badge enabled">Active</span>
+          } @else {
+            <span class="method-status-badge disabled">Disabled</span>
+          }
+        </div>
+        <p class="method-description">
+          Receive a secure login link via email - just click to authenticate
+        </p>
+        <div class="method-features">
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <span>No codes to enter</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <span>Valid for 15 minutes</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <span>One-click login</span>
+          </div>
+        </div>
+
+        <!-- Toggle Buttons -->
+        <div class="method-actions">
+          @if (currentMethod() === 'MAGIC_LINK') {
+            <!-- Disable Button when active -->
+            <button
+              class="method-btn-disable"
+              [disabled]="isUpdating() || forceTwoFactor()"
+              (click)="disable2FA()">
+              @if (isUpdating()) {
+                <span class="spinner"></span>
+                <span>Disabling...</span>
+              } @else if (forceTwoFactor()) {
+                <span>🔒 Required by Admin</span>
+              } @else {
+                <span>Disable Magic Link</span>
+              }
+            </button>
+          } @else {
+            <!-- Enable Button when inactive -->
+            <button
+              class="method-btn magic-link-btn"
+              [disabled]="isUpdating()"
+              (click)="selectMethod('MAGIC_LINK')">
+              @if (isUpdating()) {
+                <span class="spinner"></span>
+                <span>Enabling...</span>
+              } @else {
+                <span>Enable Magic Link</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Recovery Codes Section -->
+  @if (currentMethod() !== 'NONE') {
+    <div class="recovery-section">
+      <div class="recovery-header">
+        <div class="recovery-title">
+          <span class="recovery-icon">🔑</span>
+          <div>
+            <h3>Backup Recovery Codes</h3>
+            <p>Generate backup codes in case you lose access to your 2FA device</p>
+          </div>
+        </div>
+        @if (hasRecoveryCodes()) {
+          <span class="recovery-badge">✓ Generated</span>
+        }
+      </div>
+      <button
+        class="btn-recovery"
+        [disabled]="isUpdating()"
+        (click)="generateRecoveryCodes()">
+        @if (hasRecoveryCodes()) {
+          <span>Regenerate Recovery Codes</span>
+        } @else {
+          <span>Generate Recovery Codes</span>
+        }
+      </button>
+      @if (!hasRecoveryCodes()) {
+        <p class="recovery-hint">💡 Recommended: Generate backup codes to ensure account recovery</p>
+      }
+    </div>
+  }
+
+  <!-- Lost Device Help -->
+  @if (currentMethod() !== 'NONE') {
+    <div class="help-section">
+      <div class="help-card">
+        <span class="help-icon">🔑</span>
+        <div class="help-text">
+          <strong>Lost access to your 2FA device?</strong>
+          <p>If you can't access your email, we can help you regain access.</p>
+        </div>
+        <button
+          class="btn-link"
+          (click)="openResetModal()">
+          Request 2FA Reset →
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- End of isLoading() check -->
+  }
+
+  <!-- 2FA Reset Modal -->
+  @if (showResetModal()) {
+    <app-twofa-reset-request
+      [userEmail]="authService.currentUser()?.email || ''"
+      (closed)="closeResetModal()">
+    </app-twofa-reset-request>
+  }
+
+  <!-- Recovery Codes Modal -->
+  @if (showRecoveryCodes()) {
+    <app-recovery-codes (closed)="closeRecoveryCodes()">
+    </app-recovery-codes>
+  }
+  } <!-- End of @else block for isAdminBlocked -->
+</div>

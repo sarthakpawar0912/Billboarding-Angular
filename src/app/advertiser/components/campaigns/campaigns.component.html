@@ -1,0 +1,345 @@
+<div class="campaigns-page">
+  <div class="page-header">
+    <div class="header-content">
+      <h1>My Campaigns</h1>
+      <p>Manage and track your advertising campaigns.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <span>➕</span> Create Campaign
+    </button>
+  </div>
+
+  <!-- Success Message -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      {{ successMessage() }}
+    </div>
+  }
+
+  <!-- Error Message -->
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading campaigns...</p>
+    </div>
+  } @else {
+    <!-- Campaign Stats -->
+    <div class="campaign-stats">
+      <div class="stat-card">
+        <span class="stat-icon">📢</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats().totalCampaigns }}</span>
+          <span class="stat-label">Total Campaigns</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats().activeCampaigns }}</span>
+          <span class="stat-label">Active</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">👁️</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ formatNumber(stats().totalImpressions) }}</span>
+          <span class="stat-label">Total Impressions</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">💰</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ formatCurrency(stats().totalSpent) }}</span>
+          <span class="stat-label">Total Spent</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaigns List -->
+    @if (campaigns().length > 0) {
+      <div class="campaigns-list">
+        @for (campaign of campaigns(); track campaign.id) {
+          <div class="campaign-card" [class.paused]="isPaused(campaign)">
+            <div class="campaign-header">
+              <div class="campaign-title">
+                <h3>{{ campaign.name }}</h3>
+                <span class="status-badge" [ngClass]="getStatusClass(campaign.status)">
+                  {{ getStatusLabel(campaign.status) }}
+                </span>
+              </div>
+              <div class="campaign-meta">
+                <span>📅 {{ formatDate(campaign.startDate) }} - {{ formatDate(campaign.endDate) }}</span>
+                <span>🎯 {{ campaign.billboards }} billboard(s)</span>
+                <span>📍 {{ getCitiesString(campaign.cities) }}</span>
+              </div>
+            </div>
+
+            <div class="campaign-metrics">
+              <div class="metric">
+                <span class="metric-label">Budget</span>
+                <span class="metric-value">{{ formatCurrency(campaign.budget) }}</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Spent</span>
+                <span class="metric-value">{{ formatCurrency(campaign.spent) }}</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Impressions</span>
+                <span class="metric-value">{{ campaign.impressions | number }}</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Cost/1K Views</span>
+                <span class="metric-value">{{ getCostPerView(campaign) }}</span>
+              </div>
+            </div>
+
+            <div class="campaign-progress">
+              <div class="progress-header">
+                <span>Budget Utilization</span>
+                <span>{{ getProgress(campaign.spent, campaign.budget) }}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="getProgress(campaign.spent, campaign.budget)"></div>
+              </div>
+            </div>
+
+            <div class="campaign-actions">
+              @if (isActive(campaign)) {
+                <button
+                  class="btn btn-outline btn-sm btn-pause"
+                  (click)="pauseCampaign(campaign)"
+                  [disabled]="isCampaignLoading(campaign.id)">
+                  @if (isCampaignLoading(campaign.id)) {
+                    <span class="btn-spinner-dark"></span> Pausing...
+                  } @else {
+                    ⏸️ Pause
+                  }
+                </button>
+              }
+              @if (isPaused(campaign)) {
+                <button
+                  class="btn btn-outline btn-sm btn-resume"
+                  (click)="resumeCampaign(campaign)"
+                  [disabled]="isCampaignLoading(campaign.id)">
+                  @if (isCampaignLoading(campaign.id)) {
+                    <span class="btn-spinner-dark"></span> Resuming...
+                  } @else {
+                    ▶️ Resume
+                  }
+                </button>
+              }
+              @if (!isCompleted(campaign)) {
+                <button class="btn btn-outline btn-sm" (click)="openAnalyticsModal(campaign)">📊 Analytics</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <span class="empty-icon">📢</span>
+        <h3>No campaigns yet</h3>
+        <p>Create your first campaign to start advertising!</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">Create Campaign</button>
+      </div>
+    }
+  }
+
+  <!-- Create Campaign Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Create New Campaign</h3>
+          <button class="modal-close" (click)="closeCreateModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          @if (createError()) {
+            <div class="alert alert-error">
+              {{ createError() }}
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Campaign Name *</label>
+            <input
+              type="text"
+              [(ngModel)]="newCampaign.name"
+              name="campaignName"
+              placeholder="e.g., Summer Sale 2026"
+              [disabled]="isCreating()">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Number of Billboards *</label>
+              <input
+                type="number"
+                [(ngModel)]="newCampaign.billboards"
+                name="billboards"
+                min="1"
+                placeholder="1"
+                [disabled]="isCreating()">
+            </div>
+            <div class="form-group">
+              <label>Budget (INR) *</label>
+              <input
+                type="number"
+                [(ngModel)]="newCampaign.budget"
+                name="budget"
+                min="1000"
+                placeholder="500000"
+                [disabled]="isCreating()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date *</label>
+              <input
+                type="date"
+                [(ngModel)]="newCampaign.startDate"
+                name="startDate"
+                [min]="getMinDate()"
+                [disabled]="isCreating()">
+            </div>
+            <div class="form-group">
+              <label>End Date *</label>
+              <input
+                type="date"
+                [(ngModel)]="newCampaign.endDate"
+                name="endDate"
+                [min]="newCampaign.startDate || getMinDate()"
+                [disabled]="isCreating()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Target Cities *</label>
+            <div class="city-input-row">
+              <input
+                type="text"
+                [(ngModel)]="cityInput"
+                name="cityInput"
+                placeholder="Enter city name"
+                (keyup.enter)="addCity()"
+                [disabled]="isCreating()">
+              <button type="button" class="btn btn-outline btn-sm" (click)="addCity()" [disabled]="isCreating() || !cityInput.trim()">
+                Add
+              </button>
+            </div>
+            <div class="cities-list">
+              @for (city of newCampaign.cities; track city) {
+                <span class="city-tag">
+                  {{ city }}
+                  <button type="button" class="city-remove" (click)="removeCity(city)" [disabled]="isCreating()">&times;</button>
+                </span>
+              }
+              @if (newCampaign.cities.length === 0) {
+                <span class="no-cities">No cities added yet</span>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeCreateModal()" [disabled]="isCreating()">Cancel</button>
+          <button class="btn btn-primary" (click)="createCampaign()" [disabled]="isCreating()">
+            @if (isCreating()) {
+              <span class="btn-spinner"></span> Creating...
+            } @else {
+              Create Campaign
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Analytics Modal -->
+  @if (showAnalyticsModal()) {
+    <div class="modal-overlay" (click)="closeAnalyticsModal()">
+      <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Campaign Analytics</h3>
+          <button class="modal-close" (click)="closeAnalyticsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          @if (isLoadingAnalytics()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading analytics...</p>
+            </div>
+          } @else if (analyticsError()) {
+            <div class="alert alert-error">
+              {{ analyticsError() }}
+            </div>
+          } @else if (campaignAnalytics()) {
+            <div class="analytics-content">
+              <div class="analytics-header">
+                <h4>{{ campaignAnalytics()!.campaignName }}</h4>
+                <span class="status-badge" [ngClass]="getStatusClass(campaignAnalytics()!.status)">
+                  {{ getStatusLabel(campaignAnalytics()!.status) }}
+                </span>
+              </div>
+
+              <div class="analytics-dates">
+                <span>📅 {{ formatDate(campaignAnalytics()!.startDate) }} - {{ formatDate(campaignAnalytics()!.endDate) }}</span>
+              </div>
+
+              <div class="analytics-metrics">
+                <div class="analytics-metric">
+                  <span class="analytics-metric-icon">💰</span>
+                  <div class="analytics-metric-info">
+                    <span class="analytics-metric-value">{{ formatCurrency(campaignAnalytics()!.budget) }}</span>
+                    <span class="analytics-metric-label">Budget</span>
+                  </div>
+                </div>
+                <div class="analytics-metric">
+                  <span class="analytics-metric-icon">💸</span>
+                  <div class="analytics-metric-info">
+                    <span class="analytics-metric-value">{{ formatCurrency(campaignAnalytics()!.spent) }}</span>
+                    <span class="analytics-metric-label">Spent</span>
+                  </div>
+                </div>
+                <div class="analytics-metric">
+                  <span class="analytics-metric-icon">👁️</span>
+                  <div class="analytics-metric-info">
+                    <span class="analytics-metric-value">{{ campaignAnalytics()!.impressions | number }}</span>
+                    <span class="analytics-metric-label">Impressions</span>
+                  </div>
+                </div>
+                <div class="analytics-metric">
+                  <span class="analytics-metric-icon">📈</span>
+                  <div class="analytics-metric-info">
+                    <span class="analytics-metric-value">{{ formatCurrency(campaignAnalytics()!.cpm) }}</span>
+                    <span class="analytics-metric-label">CPM (Cost per 1K)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="analytics-progress">
+                <div class="progress-header">
+                  <span>Budget Utilization</span>
+                  <span>{{ campaignAnalytics()!.budgetUtilization | number:'1.1-1' }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="campaignAnalytics()!.budgetUtilization"></div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" (click)="closeAnalyticsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

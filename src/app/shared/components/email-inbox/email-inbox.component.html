@@ -1,0 +1,121 @@
+<div class="email-inbox-container" [class]="getThemeClass()">
+  <!-- Header -->
+  <div class="inbox-header">
+    <div class="header-left">
+      @if (viewMode() === 'detail') {
+        <button class="btn-back" (click)="backToList()">
+          <span class="back-icon">&larr;</span>
+          <span>Back to Inbox</span>
+        </button>
+      } @else {
+        <h2>
+          <span class="inbox-icon">&#9993;</span>
+          Inbox
+        </h2>
+        @if (unreadCount() > 0) {
+          <span class="unread-badge">{{ unreadCount() }} unread</span>
+        }
+      }
+    </div>
+    <div class="header-actions">
+      @if (viewMode() === 'list') {
+        @if (unreadCount() > 0) {
+          <button class="btn-action" (click)="markAllAsRead()">
+            <span>&#10003;</span> Mark All Read
+          </button>
+        }
+        <button class="btn-action btn-refresh" (click)="refresh()">
+          <span>&#8635;</span> Refresh
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <span>&#10003;</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span>&#9888;</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading emails...</p>
+    </div>
+  } @else {
+    <!-- List View -->
+    @if (viewMode() === 'list') {
+      @if (!hasEmails()) {
+        <div class="empty-state">
+          <div class="empty-icon">&#128233;</div>
+          <h3>No emails yet</h3>
+          <p>Your inbox is empty. Emails will appear here when you receive them.</p>
+        </div>
+      } @else {
+        <div class="email-list">
+          @for (email of emails(); track email.id) {
+            <div
+              class="email-item"
+              [class.unread]="!email.isRead"
+              (click)="selectEmail(email)">
+              <div class="email-indicator">
+                @if (!email.isRead) {
+                  <span class="unread-dot"></span>
+                }
+              </div>
+              <div class="email-content">
+                <div class="email-header-row">
+                  <span class="email-subject" [class.unread]="!email.isRead">
+                    {{ email.subject }}
+                  </span>
+                  <span class="email-date">{{ formatDate(email.createdAt) }}</span>
+                </div>
+                <div class="email-preview">
+                  {{ getPreviewText(email.body) }}
+                </div>
+              </div>
+              <div class="email-actions">
+                <button
+                  class="btn-delete"
+                  (click)="deleteEmail(email, $event)"
+                  title="Delete email">
+                  &#128465;
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <!-- Detail View -->
+    @if (viewMode() === 'detail' && selectedEmail()) {
+      <div class="email-detail">
+        <div class="detail-header">
+          <h3 class="detail-subject">{{ selectedEmail()!.subject }}</h3>
+          <div class="detail-meta">
+            <span class="detail-date">{{ formatFullDate(selectedEmail()!.createdAt) }}</span>
+          </div>
+        </div>
+        <div class="detail-body">
+          <pre class="email-body-text">{{ selectedEmail()!.body }}</pre>
+        </div>
+        <div class="detail-actions">
+          <button class="btn-delete-large" (click)="deleteEmail(selectedEmail()!)">
+            <span>&#128465;</span> Delete Email
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

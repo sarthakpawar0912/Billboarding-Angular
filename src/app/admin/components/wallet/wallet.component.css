@@ -1,0 +1,856 @@
+.wallet-container {
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.page-header .subtitle {
+  margin: 8px 0 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.withdraw-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  font-weight: 500;
+}
+
+.withdraw-btn:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+}
+
+/* Stats Grid */
+.wallet-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  border-radius: 16px;
+  border: none;
+  overflow: hidden;
+}
+
+.stat-card ::ng-deep .ant-card-body {
+  padding: 24px;
+}
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon span {
+  font-size: 28px;
+  color: #fff;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* Balance Card - Purple */
+.balance-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.balance-card .stat-label,
+.balance-card .stat-value {
+  color: #fff;
+}
+
+.balance-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Earned Card - Green */
+.earned-card {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.earned-card .stat-label,
+.earned-card .stat-value {
+  color: #fff;
+}
+
+.earned-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Withdrawn Card - Orange */
+.withdrawn-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.withdrawn-card .stat-label,
+.withdrawn-card .stat-value {
+  color: #fff;
+}
+
+.withdrawn-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Available Card - Blue */
+.available-card {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.available-card .stat-label,
+.available-card .stat-value {
+  color: #fff;
+}
+
+.available-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.last-updated {
+  text-align: right;
+  color: #999;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.transactions-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* ==================== TABLE & PAGINATION FIXES ==================== */
+
+.transactions-card ::ng-deep .ant-table {
+  border-radius: 0;
+}
+
+.transactions-card ::ng-deep .ant-table-thead > tr > th {
+  background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  padding: 14px 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.transactions-card ::ng-deep .ant-table-tbody > tr > td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
+}
+
+.transactions-card ::ng-deep .ant-table-tbody > tr:hover > td {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+}
+
+/* Pagination Styling */
+.transactions-card ::ng-deep .ant-pagination {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  padding: 16px 20px !important;
+  margin: 0 !important;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.transactions-card ::ng-deep .ant-pagination > * {
+  flex-shrink: 0 !important;
+}
+
+.transactions-card ::ng-deep .ant-pagination-item,
+.transactions-card ::ng-deep .ant-pagination-prev,
+.transactions-card ::ng-deep .ant-pagination-next {
+  min-width: 36px !important;
+  height: 36px !important;
+  line-height: 34px !important;
+  border-radius: 8px !important;
+  border: 2px solid #e5e7eb !important;
+  background: #fff !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
+}
+
+.transactions-card ::ng-deep .ant-pagination-item a {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.transactions-card ::ng-deep .ant-pagination-item:hover,
+.transactions-card ::ng-deep .ant-pagination-prev:hover:not(.ant-pagination-disabled),
+.transactions-card ::ng-deep .ant-pagination-next:hover:not(.ant-pagination-disabled) {
+  border-color: #667eea;
+  background: #f5f3ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.transactions-card ::ng-deep .ant-pagination-item:hover a {
+  color: #667eea;
+}
+
+.transactions-card ::ng-deep .ant-pagination-item-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.transactions-card ::ng-deep .ant-pagination-item-active a {
+  color: #fff;
+}
+
+.transactions-card ::ng-deep .ant-pagination-item-active:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+  transform: translateY(-1px);
+}
+
+.transactions-card ::ng-deep .ant-pagination-item-active:hover a {
+  color: #fff;
+}
+
+.transactions-card ::ng-deep .ant-pagination-disabled,
+.transactions-card ::ng-deep .ant-pagination-disabled:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+
+.transactions-card ::ng-deep .ant-pagination-prev .ant-pagination-item-link,
+.transactions-card ::ng-deep .ant-pagination-next .ant-pagination-item-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.transactions-card ::ng-deep .ant-pagination-prev:hover:not(.ant-pagination-disabled) .ant-pagination-item-link,
+.transactions-card ::ng-deep .ant-pagination-next:hover:not(.ant-pagination-disabled) .ant-pagination-item-link {
+  color: #667eea;
+}
+
+/* Page Size Selector */
+.transactions-card ::ng-deep .ant-pagination-options {
+  margin-left: 16px;
+}
+
+.transactions-card ::ng-deep .ant-pagination-options-size-changer .ant-select-selector {
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  height: 36px;
+  padding: 0 12px;
+  transition: all 0.2s ease;
+}
+
+.transactions-card ::ng-deep .ant-pagination-options-size-changer:hover .ant-select-selector {
+  border-color: #667eea;
+}
+
+.transactions-card ::ng-deep .ant-pagination-options-size-changer.ant-select-focused .ant-select-selector {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.transactions-card ::ng-deep .ant-select-selection-item {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Ellipsis */
+.transactions-card ::ng-deep .ant-pagination-jump-prev,
+.transactions-card ::ng-deep .ant-pagination-jump-next {
+  border: none;
+  background: transparent;
+}
+
+.transactions-card ::ng-deep .ant-pagination-item-ellipsis {
+  color: #94a3b8;
+}
+
+/* Total Text */
+.transactions-card ::ng-deep .ant-pagination-total-text {
+  font-size: 13px;
+  color: #64748b;
+  margin-right: auto;
+  font-weight: 500;
+}
+
+.reference-text {
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.description-text {
+  font-size: 13px;
+  color: #333;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-name {
+  font-size: 13px;
+  color: #666;
+}
+
+.booking-link {
+  color: #1890ff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.booking-link:hover {
+  text-decoration: underline;
+}
+
+.balance-after {
+  color: #666;
+  font-size: 13px;
+}
+
+.amount-credit {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.amount-debit {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+.error-message {
+  text-align: center;
+  padding: 24px;
+}
+
+.error-message p {
+  color: #ff4d4f;
+  margin-bottom: 16px;
+}
+
+.btn {
+  padding: 8px 24px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #1890ff;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #40a9ff;
+}
+
+/* ==================== WITHDRAWAL MODAL STYLES ==================== */
+
+.withdraw-modal-content {
+  padding: 0;
+}
+
+.available-balance-info {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.available-balance-info .label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.available-balance-info .value {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.amount-input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.amount-input-wrapper nz-input-number {
+  flex: 1;
+}
+
+.max-btn {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.quick-amounts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.quick-amounts .label {
+  color: #666;
+  font-size: 14px;
+}
+
+.withdrawal-summary {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-row .amount {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.withdrawal-warning {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: #ad6800;
+}
+
+.withdrawal-warning span[nz-icon] {
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+/* Bank Account Info in Modal */
+.bank-account-info {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.bank-account-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.bank-account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bank-account-details .bank-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.bank-account-details .account-number {
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.bank-account-details .account-holder {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Setup Bank Button */
+.setup-bank-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  border: none;
+  font-weight: 500;
+  color: #333;
+}
+
+.setup-bank-btn:hover {
+  background: linear-gradient(135deg, #f5a5a5 0%, #f5c4b8 100%);
+  color: #333;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.modal-actions.centered {
+  justify-content: center;
+}
+
+/* ==================== PROCESSING SCREEN ==================== */
+
+.processing-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.processing-amount {
+  margin-bottom: 24px;
+}
+
+.processing-amount .label {
+  display: block;
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.processing-amount .amount {
+  font-size: 36px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.progress-container {
+  margin-bottom: 32px;
+}
+
+.processing-steps {
+  text-align: left;
+  padding: 0 20px;
+  margin-bottom: 24px;
+}
+
+.processing-steps ::ng-deep .ant-steps-item-title {
+  font-weight: 500;
+}
+
+.processing-steps ::ng-deep .ant-steps-item-description {
+  font-size: 12px;
+  color: #888;
+}
+
+.processing-steps ::ng-deep .ant-steps-item-process .ant-steps-item-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.processing-steps ::ng-deep .ant-steps-item-finish .ant-steps-item-icon {
+  background: #52c41a;
+  border: none;
+}
+
+.processing-steps ::ng-deep .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon {
+  color: #fff;
+}
+
+.processing-bank-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.security-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #52c41a;
+}
+
+.security-notice span[nz-icon] {
+  font-size: 14px;
+}
+
+/* ==================== SUCCESS RECEIPT SCREEN ==================== */
+
+.success-receipt {
+  display: flex;
+  flex-direction: column;
+  max-height: 75vh;
+  overflow: hidden;
+}
+
+/* Receipt Header - Fixed at top */
+.receipt-header {
+  text-align: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f0fff4 0%, #dcfce7 100%);
+  border-bottom: 1px solid #bbf7d0;
+  flex-shrink: 0;
+}
+
+.receipt-icon {
+  margin-bottom: 8px;
+}
+
+.receipt-icon span {
+  font-size: 48px;
+  color: #22c55e;
+  animation: receiptPop 0.4s ease-out;
+}
+
+@keyframes receiptPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.receipt-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 4px;
+}
+
+.receipt-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: #15803d;
+}
+
+/* Receipt Body - Scrollable */
+.receipt-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+/* Transaction Details */
+.receipt-details {
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e5e5;
+}
+
+.receipt-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.receipt-row:first-child {
+  padding-top: 0;
+}
+
+.receipt-label {
+  color: #737373;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.receipt-value {
+  font-weight: 600;
+  color: #262626;
+  font-size: 13px;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-all;
+}
+
+.receipt-value.highlight {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  color: #7c3aed;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.receipt-value.mono {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 11px;
+  color: #525252;
+}
+
+/* Receipt Notice */
+.receipt-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #1d4ed8;
+  text-align: left;
+}
+
+.receipt-notice span[nz-icon] {
+  font-size: 14px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+/* Receipt Footer - Fixed at bottom */
+.receipt-footer {
+  padding: 12px 20px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.receipt-footer button {
+  font-weight: 600;
+  height: 44px;
+  font-size: 15px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.receipt-footer button:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+}
+
+/* ==================== FAILED SCREEN ==================== */
+
+.failed-content {
+  padding: 20px 0;
+}
+
+.failed-content ::ng-deep .ant-result-title {
+  color: #ff4d4f;
+}
+
+.failed-content ::ng-deep .ant-result-extra {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}

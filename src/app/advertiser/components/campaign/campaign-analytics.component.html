@@ -1,0 +1,226 @@
+<div class="analytics-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="breadcrumb animate-fade-in-up">
+        <a routerLink="/advertiser/campaigns" class="breadcrumb-link">
+          <span>📢</span> Campaigns
+        </a>
+        <span class="breadcrumb-separator">/</span>
+        @if (campaign()) {
+          <span class="breadcrumb-current">{{ campaign()!.name }}</span>
+          <span class="breadcrumb-separator">/</span>
+        }
+        <span class="breadcrumb-current">Analytics</span>
+      </div>
+
+      <div class="header-main animate-fade-in-up delay-1">
+        <button class="btn btn-glass back-btn" (click)="goBack()">
+          <span>←</span> Back
+        </button>
+        <div class="header-info">
+          <h1>
+            <span class="header-icon">📊</span>
+            @if (campaign()) {
+              {{ campaign()!.name }}
+            } @else {
+              Campaign Analytics
+            }
+          </h1>
+          @if (campaign()) {
+            <div class="header-meta">
+              <span class="status-badge" [class]="'status-' + campaign()!.status.toLowerCase()">
+                <span class="status-dot"></span>
+                {{ campaign()!.status }}
+              </span>
+              <span class="meta-item">
+                <span>📅</span>
+                {{ formatDate(campaign()!.startDate) }} - {{ formatDate(campaign()!.endDate) }}
+              </span>
+              <span class="meta-item">
+                <span>📍</span>
+                {{ getCitiesString(campaign()!.cities) }}
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  @if (errorMessage()) {
+    <div class="alert alert-danger animate-bounce-in">
+      <span class="alert-icon">❌</span>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="clearError()">×</button>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Loading analytics...</p>
+      </div>
+    </div>
+  }
+
+  @if (!isLoading()) {
+    <!-- Stats Grid -->
+    @if (analytics()) {
+      <div class="stats-grid animate-fade-in-up delay-2">
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <span>💰</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ formatCurrency(analytics()!.budget) }}</span>
+            <span class="stat-label">Total Budget</span>
+          </div>
+          <div class="stat-glow blue"></div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <span>💸</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ formatCurrency(analytics()!.spent) }}</span>
+            <span class="stat-label">Amount Spent</span>
+          </div>
+          <div class="stat-glow green"></div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <span>👁️</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ formatNumber(analytics()!.impressions) }}</span>
+            <span class="stat-label">Impressions</span>
+          </div>
+          <div class="stat-glow purple"></div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <span>📈</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ formatCurrency(analytics()!.cpm) }}</span>
+            <span class="stat-label">CPM (Cost per 1K)</span>
+          </div>
+          <div class="stat-glow orange"></div>
+        </div>
+
+        <div class="stat-card wide">
+          <div class="budget-utilization-card">
+            <div class="util-header">
+              <span class="util-icon">📊</span>
+              <span class="util-title">Budget Utilization</span>
+              <span class="util-percent">{{ getBudgetUtilization() }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                [class.warning]="getBudgetUtilization() >= 80"
+                [class.danger]="getBudgetUtilization() >= 100"
+                [style.width.%]="getBudgetUtilization()">
+              </div>
+            </div>
+            <div class="util-details">
+              <span>{{ formatCurrency(analytics()!.spent) }} of {{ formatCurrency(analytics()!.budget) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Chart Section -->
+    <div class="chart-section animate-fade-in-up delay-3">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">📈</span>
+            <h3>Daily Analytics</h3>
+          </div>
+          <div class="chart-toggle">
+            <button
+              class="toggle-btn"
+              [class.active]="chartType === 'bar'"
+              (click)="onChartTypeChange('bar')">
+              <span>📊</span> Bar
+            </button>
+            <button
+              class="toggle-btn"
+              [class.active]="chartType === 'line'"
+              (click)="onChartTypeChange('line')">
+              <span>📉</span> Line
+            </button>
+          </div>
+        </div>
+
+        @if (dailyAnalytics().length > 0) {
+          <div echarts [options]="chartOption" class="chart-container"></div>
+        } @else {
+          <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <h4>No Analytics Data</h4>
+            <p>Daily analytics data will appear here once your campaign starts running.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Daily Breakdown Table -->
+    @if (dailyAnalytics().length > 0) {
+      <div class="table-section animate-fade-in-up delay-4">
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">
+              <span class="section-icon">📋</span>
+              <h3>Daily Breakdown</h3>
+            </div>
+            <span class="record-count">{{ dailyAnalytics().length }} days</span>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th class="align-right">Spend</th>
+                  <th class="align-right">Impressions</th>
+                  <th class="align-right">CPM</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of dailyAnalytics(); track item.date) {
+                  <tr>
+                    <td>
+                      <span class="date-cell">
+                        <span>📅</span>
+                        {{ formatDate(item.date) }}
+                      </span>
+                    </td>
+                    <td class="align-right amount">{{ formatCurrency(item.spend) }}</td>
+                    <td class="align-right">{{ formatNumber(item.impressions) }}</td>
+                    <td class="align-right">
+                      @if (item.impressions > 0) {
+                        {{ formatCurrency((item.spend / item.impressions) * 1000) }}
+                      } @else {
+                        <span class="no-data">-</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

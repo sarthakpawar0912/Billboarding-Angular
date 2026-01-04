@@ -1,0 +1,103 @@
+<div class="availability-calendar">
+  <!-- Header -->
+  <div class="calendar-header">
+    <button class="nav-btn" (click)="previousMonth()" title="Previous Month">
+      <span>&lt;</span>
+    </button>
+    <div class="month-year">
+      <span>{{ getMonthYearDisplay() }}</span>
+      <button class="today-btn" (click)="goToToday()" title="Go to Today">Today</button>
+    </div>
+    <button class="nav-btn" (click)="nextMonth()" title="Next Month">
+      <span>&gt;</span>
+    </button>
+  </div>
+
+  <!-- Legend -->
+  <div class="calendar-legend">
+    <div class="legend-item">
+      <span class="legend-dot available"></span>
+      <span>Available</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot booked"></span>
+      <span>Booked</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot pending"></span>
+      <span>Pending</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="calendar-loading">
+      <div class="spinner-small"></div>
+      <span>Loading availability...</span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="calendar-error">
+      <span class="error-icon">!</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Calendar Grid -->
+  <div class="calendar-grid">
+    <!-- Day names header -->
+    <div class="calendar-weekdays">
+      @for (dayName of dayNames; track dayName) {
+        <div class="weekday">{{ dayName }}</div>
+      }
+    </div>
+
+    <!-- Weeks -->
+    <div class="calendar-weeks">
+      @for (week of weeks(); track $index) {
+        <div class="calendar-week">
+          @for (day of week.days; track day.date.getTime()) {
+            <button
+              class="{{ getDayClasses(day) }}"
+              [disabled]="day.isPast || day.status === 'BOOKED'"
+              (click)="onDayClick(day)"
+              [title]="getTooltip(day)">
+              <span class="day-number">{{ day.dayOfMonth }}</span>
+              @if (getDayPrice(day)) {
+                <span class="day-price">{{ getDayPrice(day) }}</span>
+              }
+              @if (day.status === 'PENDING' && !day.isPast) {
+                <span class="status-indicator pending">!</span>
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Selection Info -->
+  @if (selectionStart()) {
+    <div class="selection-info">
+      @if (selectionEnd()) {
+        <div class="selection-dates">
+          <span class="date-badge start">{{ formatDate(selectionStart()!) }}</span>
+          <span class="date-arrow">→</span>
+          <span class="date-badge end">{{ formatDate(selectionEnd()!) }}</span>
+        </div>
+        <button class="clear-btn" (click)="clearSelection()">Clear</button>
+      } @else {
+        <div class="selection-hint">
+          <span>Select end date...</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Instructions -->
+  <div class="calendar-instructions">
+    <p>Click to select start date, then click again to select end date</p>
+  </div>
+</div>

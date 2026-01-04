@@ -1,0 +1,229 @@
+<div class="wallet-container">
+  <div class="page-header">
+    <div class="header-content">
+      <div>
+        <h2>My Wallet</h2>
+        <p class="subtitle">Manage your earnings and withdraw funds</p>
+      </div>
+      @if (wallet() && wallet()!.balance >= 100) {
+        @if (hasBankAccount()) {
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="large"
+            class="withdraw-btn-header"
+            (click)="openPayoutModal()"
+          >
+            <span nz-icon nzType="bank" nzTheme="outline"></span>
+            Withdraw Funds
+          </button>
+        } @else {
+          <button
+            nz-button
+            nzType="default"
+            nzSize="large"
+            class="withdraw-btn-header setup-bank-btn"
+            (click)="goToSettings()"
+          >
+            <span nz-icon nzType="setting" nzTheme="outline"></span>
+            Setup Bank Account
+          </button>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- Bank Account Warning -->
+  @if (!bankAccountLoading() && !hasBankAccount()) {
+    <nz-alert
+      nzType="warning"
+      nzShowIcon
+      nzMessage="Bank Account Required"
+      nzDescription="You need to add your bank account details before you can withdraw funds. Go to Settings → Bank Details to add your account."
+      class="bank-warning"
+    >
+      <button nz-button nzType="link" (click)="goToSettings()" style="padding: 0; margin-top: 8px;">
+        Add Bank Account →
+      </button>
+    </nz-alert>
+  }
+
+  <nz-spin [nzSpinning]="loading()">
+    <!-- Wallet Stats Cards -->
+    @if (wallet()) {
+      <div class="wallet-stats-grid">
+        <!-- Available Balance -->
+        <nz-card class="stat-card balance-card">
+          <div class="stat-content">
+            <div class="stat-icon balance-icon">
+              <span nz-icon nzType="wallet" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Available Balance</span>
+              <span class="stat-value">{{ formatCurrency(wallet()!.balance) }}</span>
+            </div>
+          </div>
+        </nz-card>
+
+        <!-- Total Earned -->
+        <nz-card class="stat-card earned-card">
+          <div class="stat-content">
+            <div class="stat-icon earned-icon">
+              <span nz-icon nzType="line-chart" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Earned</span>
+              <span class="stat-value">{{ formatCurrency(wallet()!.totalEarned) }}</span>
+            </div>
+          </div>
+        </nz-card>
+
+        <!-- Total Withdrawn -->
+        <nz-card class="stat-card withdrawn-card">
+          <div class="stat-content">
+            <div class="stat-icon withdrawn-icon">
+              <span nz-icon nzType="bank" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Withdrawn</span>
+              <span class="stat-value">{{ formatCurrency(wallet()!.totalWithdrawn) }}</span>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+
+      @if (wallet()!.updatedAt) {
+        <p class="last-updated">Last updated: {{ formatDate(wallet()!.updatedAt) }}</p>
+      }
+    }
+
+    <!-- Tabs for Transactions and Payouts -->
+    <nz-tabset>
+      <!-- Transaction History Tab -->
+      <nz-tab nzTitle="Transaction History">
+        <nz-card class="transactions-card">
+          @if (transactions().length > 0) {
+            <nz-table
+              #transactionTable
+              [nzData]="transactions()"
+              [nzPageSize]="10"
+              [nzShowPagination]="true"
+              nzShowSizeChanger
+            >
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Type</th>
+                  <th>Reference</th>
+                  <th nzAlign="right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tx of transactionTable.data; track tx.id) {
+                  <tr>
+                    <td>{{ formatDate(tx.time) }}</td>
+                    <td>
+                      <nz-tag [nzColor]="getTransactionTypeColor(tx.type)">
+                        <span nz-icon [nzType]="getTransactionIcon(tx.type)"></span>
+                        {{ tx.type }}
+                      </nz-tag>
+                    </td>
+                    <td>
+                      <span class="reference-text">{{ tx.reference }}</span>
+                    </td>
+                    <td nzAlign="right">
+                      <span [class]="tx.type === 'CREDIT' ? 'amount-credit' : 'amount-debit'">
+                        {{ tx.type === 'CREDIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          } @else {
+            <nz-empty nzNotFoundContent="No transactions yet. Earnings from bookings will appear here."></nz-empty>
+          }
+        </nz-card>
+      </nz-tab>
+
+      <!-- Withdrawal History Tab -->
+      <nz-tab nzTitle="Withdrawal History">
+        <nz-card class="payouts-card">
+          @if (payouts().length > 0) {
+            <nz-table
+              #payoutTable
+              [nzData]="payouts()"
+              [nzPageSize]="10"
+              [nzShowPagination]="true"
+            >
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>UTR Number</th>
+                  <th>Bank</th>
+                  <th>Transfer Mode</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (payout of payoutTable.data; track payout.id) {
+                  <tr>
+                    <td>{{ formatDate(payout.createdAt) }}</td>
+                    <td>
+                      <span class="amount">{{ formatCurrency(payout.amount) }}</span>
+                    </td>
+                    <td>
+                      <nz-tag [nzColor]="getStatusColor(payout.status)">
+                        @if (payout.status === 'PAID') {
+                          <span nz-icon nzType="check-circle"></span>
+                        }
+                        {{ payout.status }}
+                      </nz-tag>
+                    </td>
+                    <td>
+                      @if (payout.utrNumber) {
+                        <span class="utr-number">{{ payout.utrNumber }}</span>
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td>
+                      @if (payout.bankName) {
+                        <span>{{ payout.bankName }}</span>
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td>
+                      @if (payout.transferMode) {
+                        <nz-tag nzColor="blue">{{ payout.transferMode }}</nz-tag>
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          } @else {
+            <nz-empty nzNotFoundContent="No withdrawals yet"></nz-empty>
+          }
+        </nz-card>
+      </nz-tab>
+    </nz-tabset>
+  </nz-spin>
+</div>
+
+<!-- Payout Modal -->
+<app-withdraw-modal
+  #withdrawModal
+  [isVisible]="isPayoutModalVisible"
+  [title]="'Withdraw Funds'"
+  [availableBalance]="getMaxPayoutAmount()"
+  [minAmount]="100"
+  [bankDetails]="getBankDetails()"
+  [showPayoutId]="true"
+  (visibleChange)="onPayoutModalVisibleChange($event)"
+  (withdraw)="onWithdraw($event)"
+></app-withdraw-modal>

@@ -1,0 +1,481 @@
+<div class="dashboard">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading dashboard data...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-sm btn-primary" (click)="loadDashboardData()">Retry</button>
+    </div>
+  }
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1><span class="header-icon">🏠</span> Owner Dashboard</h1>
+      <p>Manage your billboards and track your earnings.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="loadDashboardData()">
+        <span>🔄</span> Refresh
+      </button>
+      <button class="btn btn-primary" routerLink="/owner/billboards">
+        <span>➕</span> Add Billboard
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-card">
+    <div class="filters-header">
+      <h3><span>🔍</span> Filter Data</h3>
+      <div class="filters-header-actions">
+        @if (hasActiveFilters()) {
+          <button class="btn btn-sm btn-outline-danger" (click)="clearFilters()">
+            <span>✕</span> Clear Filters
+          </button>
+        }
+        <div class="export-buttons">
+          <button class="btn btn-sm btn-export" (click)="exportCSV()" [disabled]="exportingCSV()">
+            @if (exportingCSV()) {
+              <span class="btn-spinner"></span> Exporting...
+            } @else {
+              <span>📄</span> Export CSV
+            }
+          </button>
+          <button class="btn btn-sm btn-export btn-export-pdf" (click)="exportPDF()" [disabled]="exportingPDF()">
+            @if (exportingPDF()) {
+              <span class="btn-spinner"></span> Exporting...
+            } @else {
+              <span>📑</span> Export PDF
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="filters-content">
+      <!-- Billboard Filter -->
+      <div class="filter-group">
+        <label class="filter-label">Billboard</label>
+        <select class="filter-select" (change)="onBillboardFilterChange($event)" [value]="selectedBillboardId() || ''">
+          <option value="">All Billboards</option>
+          @for (billboard of allBillboards(); track billboard.id) {
+            <option [value]="billboard.id">{{ billboard.title }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Date Range -->
+      <div class="filter-group">
+        <label class="filter-label">Start Date</label>
+        <input type="date" class="filter-input" [value]="startDate()" (change)="onStartDateChange($event)" [max]="today">
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">End Date</label>
+        <input type="date" class="filter-input" [value]="endDate()" (change)="onEndDateChange($event)" [max]="today">
+      </div>
+
+      <!-- Quick Date Range Buttons -->
+      <div class="filter-group date-presets">
+        <label class="filter-label">Quick Select</label>
+        <div class="preset-buttons">
+          <button class="preset-btn" (click)="setDateRange('today')">Today</button>
+          <button class="preset-btn" (click)="setDateRange('week')">Last 7 Days</button>
+          <button class="preset-btn" (click)="setDateRange('month')">Last Month</button>
+          <button class="preset-btn" (click)="setDateRange('quarter')">Last 3 Months</button>
+          <button class="preset-btn" (click)="setDateRange('year')">This Year</button>
+          <button class="preset-btn" (click)="setDateRange('all')">All Time</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    @if (hasActiveFilters()) {
+      <div class="active-filters">
+        <span class="active-filters-label">Active Filters:</span>
+        @if (selectedBillboardId()) {
+          <span class="filter-tag">
+            Billboard: {{ getSelectedBillboardTitle() }}
+            <button class="tag-remove" (click)="clearBillboardFilter()">×</button>
+          </span>
+        }
+        @if (startDate()) {
+          <span class="filter-tag">
+            From: {{ startDate() }}
+            <button class="tag-remove" (click)="clearStartDateFilter()">×</button>
+          </span>
+        }
+        @if (endDate()) {
+          <span class="filter-tag">
+            To: {{ endDate() }}
+            <button class="tag-remove" (click)="clearEndDateFilter()">×</button>
+          </span>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Primary Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card highlight">
+      <div class="stat-icon green">💰</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ formatCurrency(stats()?.totalEarnings || 0) }}</span>
+        <span class="stat-label">Total Earnings</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon blue">🏗️</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.totalBillboards || 0 }}</span>
+        <span class="stat-label">Billboards</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon purple">📅</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.totalBookings || 0 }}</span>
+        <span class="stat-label">Total Bookings</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon orange">⏳</div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats()?.pendingRequests || 0 }}</span>
+        <span class="stat-label">Pending Requests</span>
+      </div>
+      @if (stats()?.pendingRequests) {
+        <div class="stat-badge warning">needs review</div>
+      }
+    </div>
+  </div>
+
+  <!-- Alert Cards -->
+  @if (stats()?.pendingRequests) {
+    <div class="alert-cards">
+      <div class="alert-card warning">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <h4>{{ stats()?.pendingRequests }} Pending Booking Requests</h4>
+          <p>Advertisers are waiting for your approval</p>
+        </div>
+        <button class="btn btn-sm btn-warning" routerLink="/owner/bookings">
+          <span>👁️</span> Review Now
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <!-- Monthly Revenue Chart -->
+    <div class="card chart-card">
+      <div class="card-header">
+        <h3><span>📈</span> Monthly Revenue</h3>
+        <span class="card-badge">
+          @if (startDate() && endDate()) {
+            {{ startDate() }} - {{ endDate() }}
+          } @else {
+            All Time
+          }
+        </span>
+      </div>
+      <div class="chart-container">
+        <canvas #chartCanvas width="600" height="300"></canvas>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="card map-card">
+      <div class="card-header">
+        <h3><span>🗺️</span> Billboard Locations</h3>
+        <div class="map-controls">
+          <button class="btn btn-sm btn-location"
+                  [class.btn-active]="showMyLocation()"
+                  (click)="toggleMyLocation()"
+                  [disabled]="gettingLocation()">
+            @if (gettingLocation()) {
+              <span class="btn-spinner-sm"></span>
+            } @else {
+              <span>📍</span>
+            }
+            {{ showMyLocation() ? 'Live Location On' : 'My Location' }}
+          </button>
+          @if (showMyLocation()) {
+            <button class="btn btn-sm btn-center" (click)="centerOnMyLocation()" title="Center on my location">
+              <span>🎯</span>
+            </button>
+          }
+          <button class="btn btn-sm"
+                  [class.btn-active]="showAnalyticsHeatmap()"
+                  (click)="toggleAnalyticsHeatmap()"
+                  [disabled]="loadingAnalytics()">
+            @if (loadingAnalytics()) {
+              <span class="btn-spinner-sm"></span>
+            } @else {
+              <span>🔥</span>
+            }
+            {{ showAnalyticsHeatmap() ? 'Revenue Heatmap' : 'Show Heatmap' }}
+          </button>
+          <span class="card-badge">{{ showAnalyticsHeatmap() ? 'Analytics View' : 'Billboard View' }}</span>
+        </div>
+      </div>
+      @if (locationError()) {
+        <div class="location-error">
+          <span>⚠️</span> {{ locationError() }}
+        </div>
+      }
+      @if (showMyLocation() && ownerLocation()) {
+        <div class="location-info">
+          <span class="location-live-indicator"></span>
+          <span>Live: {{ ownerLocation()?.lat?.toFixed(6) }}, {{ ownerLocation()?.lng?.toFixed(6) }}</span>
+        </div>
+      }
+      @if (showAnalyticsHeatmap()) {
+        <div class="heatmap-legend">
+          <span class="legend-item"><span class="legend-color low"></span> Low Revenue</span>
+          <span class="legend-item"><span class="legend-color medium"></span> Medium Revenue</span>
+          <span class="legend-item"><span class="legend-color high"></span> High Revenue</span>
+        </div>
+      }
+      <div class="map-container" #mapContainer></div>
+    </div>
+  </div>
+
+  <!-- Billboard Performance Table -->
+  <div class="card table-card">
+    <div class="card-header">
+      <h3><span>📋</span> Billboard Performance</h3>
+      <a routerLink="/owner/billboards" class="link">Manage Billboards →</a>
+    </div>
+    @if (billboards().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">🏗️</span>
+        <p>No billboard data available for selected filters</p>
+        @if (hasActiveFilters()) {
+          <button class="btn btn-primary btn-sm" (click)="clearFilters()">Clear Filters</button>
+        } @else {
+          <button class="btn btn-primary btn-sm" routerLink="/owner/billboards">Add Billboard</button>
+        }
+      </div>
+    } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Billboard</th>
+              <th>Location</th>
+              <th>Type</th>
+              <th>Bookings</th>
+              <th>Revenue</th>
+              <th>Images</th>
+              <th>Performance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (billboard of billboards(); track billboard.billboardId) {
+              <tr [class.highlighted]="selectedBillboardId() === billboard.billboardId">
+                <td>
+                  <div class="billboard-cell">
+                    <div class="billboard-avatar">{{ (getBillboardTitle(billboard)).charAt(0) }}</div>
+                    <span>{{ getBillboardTitle(billboard) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="location-text">{{ getBillboardLocation(billboard) }}</span>
+                </td>
+                <td>
+                  <span class="type-badge" [ngClass]="getTypeClass(billboard.type)">
+                    {{ billboard.type }}
+                  </span>
+                </td>
+                <td>
+                  <span class="booking-count">{{ billboard.totalBookings }}</span>
+                </td>
+                <td>
+                  <span class="revenue-amount">{{ formatCurrency(billboard.totalRevenue) }}</span>
+                </td>
+                <td>
+                  <span class="image-count" [class.warning]="billboard.imageCount === 0">
+                    {{ billboard.imageCount }} {{ billboard.imageCount === 1 ? 'image' : 'images' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-bar-container">
+                    <div class="table-bar"
+                         [style.width.%]="billboard.totalRevenue > 0 ? Math.max((billboard.totalRevenue / getMaxRevenue()) * 100, 5) : 5">
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h3><span>⚡</span> Quick Actions</h3>
+    <div class="actions-grid">
+      <a routerLink="/owner/billboards" class="action-card">
+        <span class="action-icon">➕</span>
+        <span class="action-label">Add Billboard</span>
+      </a>
+      <a routerLink="/owner/bookings" class="action-card">
+        <span class="action-icon">📋</span>
+        <span class="action-label">View Bookings</span>
+        @if (stats()?.pendingRequests) {
+          <span class="action-badge">{{ stats()?.pendingRequests }}</span>
+        }
+      </a>
+      <a routerLink="/owner/billboards" class="action-card">
+        <span class="action-icon">🏗️</span>
+        <span class="action-label">My Billboards</span>
+        <span class="action-count">{{ stats()?.totalBillboards || 0 }}</span>
+      </a>
+      <a routerLink="/owner/earnings" class="action-card">
+        <span class="action-icon">💳</span>
+        <span class="action-label">Earnings</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-grid">
+    <!-- Top Performing Billboards -->
+    <div class="card">
+      <div class="card-header">
+        <h3><span>🏆</span> Top Performers</h3>
+        <a routerLink="/owner/billboards" class="link">View All →</a>
+      </div>
+      <div class="billboard-performance-list">
+        @if (getTopBillboards().length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">🏗️</span>
+            <p>No billboard data available</p>
+          </div>
+        }
+        @for (billboard of getTopBillboards(); track billboard.billboardId; let i = $index) {
+          <div class="performance-item" [class.highlighted]="selectedBillboardId() === billboard.billboardId">
+            <div class="performance-rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+              {{ i + 1 }}
+            </div>
+            <div class="performance-info">
+              <h4>{{ getBillboardTitle(billboard) }}</h4>
+              <div class="performance-stats">
+                <span class="stat-mini"><span>📅</span> {{ billboard.totalBookings }} bookings</span>
+                <span class="stat-mini"><span>🖼️</span> {{ billboard.imageCount }} images</span>
+              </div>
+              <div class="performance-bar-container">
+                <div class="performance-bar"
+                     [style.width.%]="billboard.totalRevenue > 0 ? Math.max((billboard.totalRevenue / getMaxRevenue()) * 100, 5) : 5">
+                </div>
+              </div>
+            </div>
+            <div class="performance-revenue">
+              {{ formatCurrency(billboard.totalRevenue) }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="card">
+      <div class="card-header">
+        <h3><span>📅</span> Recent Bookings</h3>
+        <a routerLink="/owner/bookings" class="link">View All →</a>
+      </div>
+      <div class="bookings-list">
+        @if (recentBookings().length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">📅</span>
+            <p>No bookings yet</p>
+          </div>
+        }
+        @for (booking of recentBookings(); track booking.id) {
+          <div class="booking-item">
+            <div class="booking-avatar">
+              {{ getBookingBillboardTitle(booking).charAt(0) }}
+            </div>
+            <div class="booking-info">
+              <h4>{{ getBookingBillboardTitle(booking) }}</h4>
+              <p>{{ getAdvertiserDisplay(booking) }}</p>
+              <span class="booking-date">{{ formatDate(booking.startDate) }} - {{ formatDate(booking.endDate) }}</span>
+            </div>
+            <div class="booking-amount">{{ formatCurrency(booking.totalPrice) }}</div>
+            <span class="status-badge" [ngClass]="getStatusClass(booking.status)">
+              {{ booking.status }}
+            </span>
+            @if (booking.status === 'PENDING') {
+              <div class="booking-actions">
+                <button class="action-btn approve" (click)="approveBooking(booking.id)" title="Approve">
+                  <span>✓</span>
+                </button>
+                <button class="action-btn reject" (click)="rejectBooking(booking.id)" title="Reject">
+                  <span>✕</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Earnings Summary Card -->
+  <div class="card earnings-card">
+    <div class="card-header">
+      <h3><span>💰</span> Earnings Summary</h3>
+      <span class="card-badge">
+        @if (hasActiveFilters()) {
+          Filtered
+        } @else {
+          All Time
+        }
+      </span>
+    </div>
+    <div class="earnings-summary">
+      <div class="earnings-main">
+        <div class="earnings-amount">{{ formatCurrency(stats()?.totalEarnings || 0) }}</div>
+        <div class="earnings-label">Total Revenue Generated</div>
+      </div>
+      <div class="earnings-breakdown">
+        <div class="earnings-stat">
+          <span class="stat-icon-small">🏗️</span>
+          <div class="stat-detail">
+            <span class="stat-number">{{ stats()?.totalBillboards || 0 }}</span>
+            <span class="stat-text">Billboards</span>
+          </div>
+        </div>
+        <div class="earnings-stat">
+          <span class="stat-icon-small">📅</span>
+          <div class="stat-detail">
+            <span class="stat-number">{{ stats()?.totalBookings || 0 }}</span>
+            <span class="stat-text">Bookings</span>
+          </div>
+        </div>
+        <div class="earnings-stat">
+          <span class="stat-icon-small">💵</span>
+          <div class="stat-detail">
+            <span class="stat-number">{{ formatCurrency(getAveragePerBooking()) }}</span>
+            <span class="stat-text">Avg. per Booking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,177 @@
+<div class="wallet-container">
+  <div class="page-header">
+    <div class="header-content">
+      <div>
+        <h2>Commission Wallet</h2>
+        <p class="subtitle">Platform commission earnings from billboard bookings</p>
+      </div>
+      @if (wallet() && wallet()!.availableForWithdrawal > 0) {
+        @if (hasBankAccount()) {
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="large"
+            class="withdraw-btn"
+            (click)="openWithdrawModal()"
+          >
+            <span nz-icon nzType="bank" nzTheme="outline"></span>
+            Withdraw Commission
+          </button>
+        } @else {
+          <a routerLink="/admin/bank-settings" nz-button nzType="primary" nzSize="large" class="setup-bank-btn">
+            <span nz-icon nzType="setting" nzTheme="outline"></span>
+            Setup Bank Account
+          </a>
+        }
+      }
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading()">
+    <!-- Wallet Balance Cards -->
+    @if (wallet()) {
+      <div class="wallet-stats-grid">
+        <!-- Current Balance -->
+        <nz-card class="stat-card balance-card">
+          <div class="stat-content">
+            <div class="stat-icon balance-icon">
+              <span nz-icon nzType="wallet" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Current Balance</span>
+              <span class="stat-value balance-amount">{{ formatCurrency(wallet()!.currentBalance) }}</span>
+            </div>
+          </div>
+        </nz-card>
+
+        <!-- Total Earned -->
+        <nz-card class="stat-card earned-card">
+          <div class="stat-content">
+            <div class="stat-icon earned-icon">
+              <span nz-icon nzType="line-chart" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Earned</span>
+              <span class="stat-value earned-amount">{{ formatCurrency(wallet()!.totalEarned) }}</span>
+            </div>
+          </div>
+        </nz-card>
+
+        <!-- Total Withdrawn -->
+        <nz-card class="stat-card withdrawn-card">
+          <div class="stat-content">
+            <div class="stat-icon withdrawn-icon">
+              <span nz-icon nzType="bank" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Withdrawn</span>
+              <span class="stat-value withdrawn-amount">{{ formatCurrency(wallet()!.totalWithdrawn) }}</span>
+            </div>
+          </div>
+        </nz-card>
+
+        <!-- Available for Withdrawal -->
+        <nz-card class="stat-card available-card">
+          <div class="stat-content">
+            <div class="stat-icon available-icon">
+              <span nz-icon nzType="dollar" nzTheme="outline"></span>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Available to Withdraw</span>
+              <span class="stat-value available-amount">{{ formatCurrency(wallet()!.availableForWithdrawal) }}</span>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+
+      <!-- Last Updated -->
+      @if (wallet()!.updatedAt) {
+        <p class="last-updated">Last updated: {{ formatDate(wallet()!.updatedAt) }}</p>
+      }
+    }
+
+    <!-- Error Message -->
+    @if (error()) {
+      <div class="error-message">
+        <nz-card>
+          <p>{{ error() }}</p>
+          <button class="btn btn-primary" (click)="loadWalletData()">Retry</button>
+        </nz-card>
+      </div>
+    }
+
+    <!-- Transactions Table -->
+    <nz-card class="transactions-card" nzTitle="Commission Transactions">
+      @if (transactions().length > 0) {
+        <nz-table
+          #transactionTable
+          [nzData]="transactions()"
+          [nzPageSize]="10"
+          [nzShowPagination]="true"
+          nzShowSizeChanger
+        >
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Owner</th>
+              <th>Booking ID</th>
+              <th nzAlign="right">Amount</th>
+              <th nzAlign="right">Balance After</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tx of transactionTable.data; track tx.id) {
+              <tr>
+                <td>{{ formatDate(tx.time) }}</td>
+                <td>
+                  <nz-tag [nzColor]="getTransactionTypeColor(tx.type)">
+                    <span nz-icon [nzType]="getTransactionIcon(tx.type)"></span>
+                    {{ tx.type }}
+                  </nz-tag>
+                </td>
+                <td>
+                  <span class="description-text">{{ tx.description || tx.reference }}</span>
+                </td>
+                <td>
+                  <span class="owner-name">{{ tx.ownerName || '-' }}</span>
+                </td>
+                <td>
+                  @if (tx.bookingId) {
+                    <a class="booking-link">#{{ tx.bookingId }}</a>
+                  } @else {
+                    <span>-</span>
+                  }
+                </td>
+                <td nzAlign="right">
+                  <span [class]="tx.type === 'CREDIT' ? 'amount-credit' : 'amount-debit'">
+                    {{ tx.type === 'CREDIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                  </span>
+                </td>
+                <td nzAlign="right">
+                  <span class="balance-after">{{ formatCurrency(tx.balanceAfter) }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      } @else {
+        <nz-empty nzNotFoundContent="No commission transactions yet. Transactions will appear here when advertisers pay for bookings."></nz-empty>
+      }
+    </nz-card>
+  </nz-spin>
+</div>
+
+<!-- Withdrawal Modal -->
+<app-withdraw-modal
+  #withdrawModal
+  [isVisible]="isWithdrawModalVisible"
+  [title]="'Withdraw Commission'"
+  [availableBalance]="getMaxWithdrawAmount()"
+  [minAmount]="1"
+  [bankDetails]="getBankDetails()"
+  [showPayoutId]="false"
+  (visibleChange)="onWithdrawModalVisibleChange($event)"
+  (withdraw)="onWithdraw($event)"
+></app-withdraw-modal>

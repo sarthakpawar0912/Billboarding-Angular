@@ -1,0 +1,762 @@
+<div class="browse-page">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading available billboards...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span>⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-sm" (click)="loadBillboards()">Retry</button>
+    </div>
+  }
+
+  <!-- Success Message -->
+  @if (successMessage()) {
+    <div class="toast-success">
+      <span class="toast-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <!-- Error Message -->
+  @if (errorMessage()) {
+    <div class="toast-error">
+      <span class="toast-icon">✕</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Browse Billboards</h1>
+      <p>Find the perfect billboard for your advertising campaign.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-nearby" (click)="openNearbyModal()">
+        <span>📍</span> Find Nearby
+      </button>
+      <button class="btn btn-outline" (click)="loadBillboards()">
+        <span>🔄</span> Refresh
+      </button>
+      <div class="results-count">
+        {{ filteredBillboards().length }} billboards found
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text"
+             placeholder="Search by location, name..."
+             (input)="onSearch($event)">
+    </div>
+    <div class="filters-group">
+      <select (change)="onCityFilter($event)">
+        <option value="all">All Cities</option>
+        @for (city of cities(); track city) {
+          <option [value]="city">{{ city }}</option>
+        }
+      </select>
+      <select (change)="onTypeFilter($event)">
+        <option value="all">All Types</option>
+        <option value="STATIC">Static</option>
+        <option value="LED">LED</option>
+        <option value="DIGITAL">Digital</option>
+        <option value="NEON">Neon</option>
+      </select>
+      <select (change)="onPriceFilter($event)">
+        <option value="all">Any Price</option>
+        <option value="low">Under ₹2K/day</option>
+        <option value="medium">₹2K - ₹5K/day</option>
+        <option value="high">Above ₹5K/day</option>
+      </select>
+      <select (change)="onSort($event)">
+        <option value="popular">Most Popular</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+        <option value="newest">Newest First</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Billboards Grid -->
+  @if (!loading()) {
+    <div class="billboards-grid">
+      @for (billboard of filteredBillboards(); track billboard.id) {
+        <div class="billboard-card">
+          <div class="billboard-image"
+               (mouseenter)="startCarousel(billboard.id, billboard.imagePaths?.length || 0)"
+               (mouseleave)="stopCarousel(billboard.id)">
+            @if (billboard.imagePaths && billboard.imagePaths.length > 0) {
+              <div class="image-carousel">
+                <div class="carousel-images" [style.transform]="getCarouselTransform(billboard.id)">
+                  @for (imagePath of billboard.imagePaths; track imagePath; let i = $index) {
+                    <img [src]="advertiserService.getImageUrl(imagePath)"
+                         alt="Billboard"
+                         class="clickable-image"
+                         (click)="openLightbox(billboard, i, $event)">
+                  }
+                </div>
+                @if (billboard.imagePaths.length > 1) {
+                  <div class="carousel-dots">
+                    @for (imagePath of billboard.imagePaths; track $index; let i = $index) {
+                      <button class="carousel-dot"
+                              [class.active]="getCurrentImageIndex(billboard.id) === i"
+                              (click)="setImageIndex(billboard.id, i); $event.stopPropagation()">
+                      </button>
+                    }
+                  </div>
+                }
+                <!-- View full image button -->
+                <button class="view-full-btn" (click)="openLightbox(billboard, getCurrentImageIndex(billboard.id), $event)">
+                  🔍 View Full
+                </button>
+              </div>
+            } @else if (billboard.imageUrl) {
+              <img [src]="billboard.imageUrl"
+                   alt="Billboard"
+                   class="clickable-image"
+                   (click)="openLightbox(billboard, 0, $event)">
+            } @else {
+              <div class="image-placeholder">
+                <span>🎯</span>
+              </div>
+            }
+            <span class="type-badge">
+              {{ getBillboardTypeInfo(billboard.billboardType).icon }}
+              {{ getBillboardTypeInfo(billboard.billboardType).label }}
+            </span>
+            <button class="favorite-btn"
+                    [class.active]="isFavorite(billboard.id)"
+                    [class.loading]="togglingFavorite() === billboard.id"
+                    (click)="toggleFavorite(billboard, $event)"
+                    [disabled]="togglingFavorite() === billboard.id">
+              @if (togglingFavorite() === billboard.id) {
+                <span class="fav-spinner"></span>
+              } @else if (isFavorite(billboard.id)) {
+                <span>❤️</span>
+              } @else {
+                <span>🤍</span>
+              }
+            </button>
+          </div>
+          <div class="billboard-content">
+            <div class="billboard-header">
+              <h3>{{ billboard.title }}</h3>
+              <span class="billboard-price">
+                {{ formatCurrency(billboard.pricePerDay) }}
+                <span class="period">/day</span>
+              </span>
+            </div>
+            <p class="billboard-location">📍 {{ billboard.location }}</p>
+            <p class="billboard-size">📐 {{ billboard.size }}</p>
+
+            <div class="billboard-owner">
+              <span class="owner-label">Owner:</span>
+              <span class="owner-name">{{ billboard.owner?.name || 'N/A' }}</span>
+            </div>
+
+            <div class="billboard-actions">
+              <button class="btn btn-outline" (click)="openDetailModal(billboard)">
+                🗺️ View Details
+              </button>
+              <button class="btn btn-primary" (click)="openBookingModal(billboard)">
+                📅 Book Now
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (filteredBillboards().length === 0 && !loading()) {
+    <div class="empty-state">
+      <span class="empty-icon">🔍</span>
+      <h3>No billboards found</h3>
+      <p>Try adjusting your filters to find more options.</p>
+      <button class="btn btn-primary" (click)="clearFilters()">
+        Clear Filters
+      </button>
+    </div>
+  }
+</div>
+
+<!-- Booking Modal - OUTSIDE browse-page for proper fixed positioning -->
+@if (showBookingModal() && selectedBillboard()) {
+  <div class="modal-overlay" (click)="closeBookingModal()">
+    <div class="modal-content booking-modal booking-modal-with-calendar" (click)="$event.stopPropagation()">
+      <button class="modal-close" (click)="closeBookingModal()">×</button>
+
+      <div class="modal-header">
+        <h2>📅 Book Billboard</h2>
+      </div>
+
+      <div class="modal-body">
+        <div class="billboard-summary">
+          <h3>{{ selectedBillboard()!.title }}</h3>
+          <p class="location">📍 {{ selectedBillboard()!.location }}</p>
+          <div class="price-info">
+            <span class="price">{{ formatCurrency(selectedBillboard()!.pricePerDay) }}</span>
+            <span class="period">per day</span>
+          </div>
+        </div>
+
+        <!-- Availability Calendar -->
+        <div class="calendar-section">
+          <div class="calendar-header-toggle">
+            <h4>📆 Select Dates from Calendar</h4>
+            <button class="toggle-calendar-btn" (click)="toggleCalendar()">
+              {{ showCalendar() ? 'Hide Calendar' : 'Show Calendar' }}
+            </button>
+          </div>
+
+          @if (showCalendar()) {
+            <app-availability-calendar
+              [billboardId]="selectedBillboard()!.id"
+              [startDate]="bookingStartDate"
+              [endDate]="bookingEndDate"
+              (dateSelected)="onCalendarDateSelected($event)"
+              (availabilityLoaded)="onCalendarAvailabilityLoaded($event)">
+            </app-availability-calendar>
+          }
+        </div>
+
+        <div class="booking-form">
+          <div class="form-divider">
+            <span>Or enter dates manually</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startDate">Start Date <span class="required">*</span></label>
+              <input type="date"
+                     id="startDate"
+                     class="form-control"
+                     [min]="getMinDate()"
+                     [(ngModel)]="bookingStartDate"
+                     (change)="onDateChange()">
+            </div>
+            <div class="form-group">
+              <label for="endDate">End Date <span class="required">*</span></label>
+              <input type="date"
+                     id="endDate"
+                     class="form-control"
+                     [min]="bookingStartDate || getMinDate()"
+                     [(ngModel)]="bookingEndDate"
+                     (change)="onDateChange()">
+            </div>
+          </div>
+
+          <!-- Availability Status -->
+          @if (bookingStartDate && bookingEndDate) {
+            <div class="availability-status" [class]="'status-' + availabilityStatus()">
+              @if (checkingAvailability()) {
+                <div class="status-checking">
+                  <span class="spinner-small"></span>
+                  <span>Checking availability...</span>
+                </div>
+              } @else if (availabilityStatus() === 'available') {
+                <div class="status-available">
+                  <span class="status-icon">✅</span>
+                  <span>{{ getAvailabilityMessage() }}</span>
+                </div>
+              } @else if (availabilityStatus() === 'unavailable') {
+                <div class="status-unavailable">
+                  <span class="status-icon">❌</span>
+                  <span>{{ getAvailabilityMessage() }}</span>
+                </div>
+              } @else if (availabilityStatus() === 'error') {
+                <div class="status-error">
+                  <span class="status-icon">⚠️</span>
+                  <span>Unable to check availability. You can still try to book.</span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (bookingStartDate && bookingEndDate) {
+            <div class="booking-summary">
+              <div class="summary-item">
+                <span class="label">Duration:</span>
+                <span class="value">{{ calculatedDays() }} days</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Base rate:</span>
+                <span class="value">{{ formatCurrency(selectedBillboard()!.pricePerDay) }}/day</span>
+              </div>
+              @if (calendarAvailability().length > 0) {
+                <div class="summary-item dynamic-pricing">
+                  <span class="label">Dynamic Pricing:</span>
+                  <span class="value pricing-note">Prices vary by date</span>
+                </div>
+              }
+
+              <!-- Price Breakdown (from Backend) -->
+              @if (pricePreviewLoading()) {
+                <div class="price-loading" style="text-align: center; padding: 20px; color: #666;">
+                  <span>Calculating price...</span>
+                </div>
+              } @else if (pricePreviewError()) {
+                <div class="price-error" style="text-align: center; padding: 20px; color: #dc2626;">
+                  <span>{{ pricePreviewError() }}</span>
+                </div>
+              } @else if (pricePreview()) {
+                <div class="price-breakdown-section">
+                  <div class="summary-item">
+                    <span class="label">Billboard Rent:</span>
+                    <span class="value">{{ formatCurrency(calculatedBaseAmount()) }}</span>
+                  </div>
+                  <div class="summary-item sub-item">
+                    <span class="label">Platform Fee ({{ pricePreview()?.commissionPercent || 15 }}%):</span>
+                    <span class="value">+ {{ formatCurrency(calculatedCommission()) }}</span>
+                  </div>
+                  <div class="summary-item sub-item">
+                    <span class="label">GST ({{ pricePreview()?.gstPercent || 18 }}%):</span>
+                    <span class="value">+ {{ formatCurrency(calculatedGst()) }}</span>
+                  </div>
+                </div>
+
+                <div class="summary-item total">
+                  <span class="label">Total Payable:</span>
+                  <span class="value">{{ formatCurrency(calculatedTotal()) }}</span>
+                </div>
+
+                <!-- Smart Pricing Notice -->
+                @if (pricePreview()?.demandSurgeApplied || pricePreview()?.weekendSurgeApplied) {
+                  <div class="pricing-notice" style="margin-top: 10px; padding: 8px 12px; background: #fef3c7; border-radius: 6px; font-size: 0.85em; color: #92400e;">
+                    @if (pricePreview()?.demandSurgeApplied) {
+                      <span>📈 High demand pricing applied</span>
+                    }
+                    @if (pricePreview()?.weekendSurgeApplied) {
+                      <span>📅 Weekend pricing applied</span>
+                    }
+                  </div>
+                }
+              }
+
+              <div class="price-note" style="margin-top: 10px;">
+                <span class="note-icon">ℹ️</span>
+                <span>Price shown is from server. Final amount locked at payment.</span>
+              </div>
+
+              <!-- Negotiation Section - Contact Owner for Discount -->
+              @if (pricePreview()) {
+                <div class="negotiation-section">
+                  <div class="negotiation-header">
+                    <div class="negotiation-icon">💰</div>
+                    <div class="negotiation-title">
+                      <h5>Want a Better Deal? Negotiate with Owner!</h5>
+                      <p class="discount-badge">Up to <strong>{{ pricePreview()?.maxDiscountPercent || 50 }}% OFF</strong> possible</p>
+                    </div>
+                  </div>
+
+                  <p class="negotiation-desc">
+                    Contact the billboard owner directly to negotiate a discount before creating your booking.
+                    Once you create the booking, the owner can apply discounts based on your discussion.
+                  </p>
+
+                  @if (pricePreview()?.ownerName) {
+                    <div class="owner-contact-card">
+                      <div class="owner-info">
+                        <div class="owner-avatar">
+                          {{ pricePreview()?.ownerName?.charAt(0)?.toUpperCase() || 'O' }}
+                        </div>
+                        <div class="owner-details">
+                          <span class="owner-name">{{ pricePreview()!.ownerName }}</span>
+                          <span class="owner-label">Billboard Owner</span>
+                        </div>
+                      </div>
+
+                      <div class="contact-actions">
+                        @if (pricePreview()?.ownerPhone) {
+                          <a href="tel:{{ pricePreview()!.ownerPhone }}" class="contact-btn contact-btn-call">
+                            <span class="contact-btn-icon">📞</span>
+                            <span class="contact-btn-text">{{ pricePreview()!.ownerPhone }}</span>
+                          </a>
+                        }
+                        @if (pricePreview()?.ownerEmail) {
+                          <a href="mailto:{{ pricePreview()!.ownerEmail }}?subject=Discount Inquiry for {{ selectedBillboard()?.title }}&body=Hi {{ pricePreview()!.ownerName }},%0D%0A%0D%0AI am interested in booking your billboard '{{ selectedBillboard()?.title }}' from {{ bookingStartDate }} to {{ bookingEndDate }}.%0D%0A%0D%0ACould you please offer a discount on this booking?%0D%0A%0D%0AThank you!" class="contact-btn contact-btn-email">
+                            <span class="contact-btn-icon">✉️</span>
+                            <span class="contact-btn-text">{{ pricePreview()!.ownerEmail }}</span>
+                          </a>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="owner-contact-unavailable">
+                      <span class="unavailable-icon">ℹ️</span>
+                      <span>Owner contact info will be available after selecting dates</span>
+                    </div>
+                  }
+
+                  <div class="negotiation-tip">
+                    <span class="tip-icon">💡</span>
+                    <span class="tip-text">
+                      <strong>Pro Tip:</strong> Create the booking first, then the owner will review and can apply a discount before you make payment. You only pay after approving the final price!
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeBookingModal()">Cancel</button>
+        <button class="btn btn-primary"
+                (click)="submitBooking()"
+                [disabled]="processing() || !bookingStartDate || !bookingEndDate || checkingAvailability() || availabilityStatus() === 'unavailable'"
+                [class.btn-disabled]="availabilityStatus() === 'unavailable'">
+          @if (processing()) {
+            <span class="btn-spinner"></span>
+            Processing...
+          } @else if (checkingAvailability()) {
+            <span class="btn-spinner"></span>
+            Checking...
+          } @else if (availabilityStatus() === 'unavailable') {
+            🚫 Not Available
+          } @else {
+            📅 Submit Booking Request
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Billboard Detail Modal with Map -->
+@if (showDetailModal()) {
+  <div class="modal-overlay" (click)="closeDetailModal()">
+    <div class="modal-content detail-modal" (click)="$event.stopPropagation()">
+      <button class="modal-close" (click)="closeDetailModal()">×</button>
+
+      @if (loadingDetail()) {
+        <div class="detail-loading">
+          <div class="spinner"></div>
+          <p>Loading billboard details...</p>
+        </div>
+      } @else if (detailBillboard()) {
+        <div class="detail-content">
+          <!-- Image Gallery -->
+          <div class="detail-gallery">
+            @if (detailBillboard()!.imagePaths && detailBillboard()!.imagePaths.length > 0) {
+              <div class="detail-carousel">
+                <div class="detail-carousel-images" [style.transform]="getDetailCarouselTransform()">
+                  @for (imagePath of detailBillboard()!.imagePaths; track imagePath) {
+                    <img [src]="advertiserService.getImageUrl(imagePath)" alt="Billboard">
+                  }
+                </div>
+                @if (detailBillboard()!.imagePaths.length > 1) {
+                  <div class="detail-carousel-dots">
+                    @for (imagePath of detailBillboard()!.imagePaths; track $index; let i = $index) {
+                      <button class="detail-carousel-dot"
+                              [class.active]="detailCarouselIndex() === i"
+                              (click)="setDetailImageIndex(i)">
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="detail-image-placeholder">
+                <span>🎯</span>
+              </div>
+            }
+            <span class="detail-type-badge">
+              {{ getBillboardTypeInfo(detailBillboard()!.type).icon }}
+              {{ getBillboardTypeInfo(detailBillboard()!.type).label }}
+            </span>
+            <span class="detail-availability-badge" [class.available]="detailBillboard()!.available">
+              {{ detailBillboard()!.available ? '✓ Available' : '✕ Unavailable' }}
+            </span>
+          </div>
+
+          <!-- Billboard Info -->
+          <div class="detail-info">
+            <div class="detail-header">
+              <h2>{{ detailBillboard()!.title }}</h2>
+              <div class="detail-price">
+                {{ formatCurrency(detailBillboard()!.pricePerDay) }}
+                <span class="period">/day</span>
+              </div>
+            </div>
+
+            <div class="detail-meta">
+              <div class="meta-item">
+                <span class="meta-icon">📍</span>
+                <span>{{ detailBillboard()!.location }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">📐</span>
+                <span>{{ detailBillboard()!.size }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">📅</span>
+                <span>Listed {{ detailBillboard()!.createdAt | date:'mediumDate' }}</span>
+              </div>
+            </div>
+
+            <!-- Owner Info -->
+            <div class="detail-owner-card">
+              <div class="owner-header">
+                <span class="owner-avatar">{{ detailBillboard()!.owner.name.charAt(0) }}</span>
+                <div class="owner-info">
+                  <h4>{{ detailBillboard()!.owner.name }}</h4>
+                  <span class="owner-role">Billboard Owner</span>
+                </div>
+                <span class="kyc-badge" [class.verified]="detailBillboard()!.owner.kycStatus === 'APPROVED'">
+                  {{ detailBillboard()!.owner.kycStatus === 'APPROVED' ? '✓ Verified' : detailBillboard()!.owner.kycStatus }}
+                </span>
+              </div>
+              <div class="owner-contact">
+                <div class="contact-item">
+                  <span class="contact-icon">📧</span>
+                  <span>{{ detailBillboard()!.owner.email }}</span>
+                </div>
+                @if (detailBillboard()!.owner.phone) {
+                  <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <span>{{ detailBillboard()!.owner.phone }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Map Section -->
+            <div class="detail-map-section">
+              <h3>📍 Location on Map</h3>
+              <div class="detail-map-container" #detailMapContainer></div>
+              <div class="map-coordinates">
+                <span>Lat: {{ detailBillboard()!.latitude }}</span>
+                <span>Lng: {{ detailBillboard()!.longitude }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="detail-actions">
+            <button class="btn btn-outline" (click)="closeDetailModal()">Close</button>
+            <button class="btn btn-primary" (click)="bookFromDetail()" [disabled]="!detailBillboard()!.available">
+              @if (detailBillboard()!.available) {
+                📅 Book This Billboard
+              } @else {
+                Currently Unavailable
+              }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Nearby Search Modal -->
+@if (showNearbyModal()) {
+  <div class="modal-overlay" (click)="closeNearbyModal()">
+    <div class="modal-content nearby-modal" (click)="$event.stopPropagation()">
+      <button class="modal-close" (click)="closeNearbyModal()">×</button>
+
+      <div class="nearby-header">
+        <h2>📍 Find Nearby Billboards</h2>
+        <p>Search for billboards within a specific radius of a location</p>
+      </div>
+
+      <div class="nearby-search-form">
+        <div class="location-input-group">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Latitude</label>
+              <input type="number"
+                     class="form-control"
+                     placeholder="e.g., 18.5987"
+                     step="0.0001"
+                     [(ngModel)]="nearbyLatInput">
+            </div>
+            <div class="form-group">
+              <label>Longitude</label>
+              <input type="number"
+                     class="form-control"
+                     placeholder="e.g., 73.7721"
+                     step="0.0001"
+                     [(ngModel)]="nearbyLngInput">
+            </div>
+          </div>
+
+          <div class="location-actions">
+            <button class="btn btn-location" (click)="useMyLocation()" [disabled]="gettingLocation()">
+              @if (gettingLocation()) {
+                <span class="btn-spinner"></span>
+                Detecting...
+              } @else {
+                📍 Use My Location
+              }
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group radius-group">
+          <label>Search Radius (km)</label>
+          <div class="radius-input-wrapper">
+            <input type="range"
+                   min="1"
+                   max="50"
+                   [(ngModel)]="nearbyRadiusInput"
+                   class="radius-slider">
+            <input type="number"
+                   class="form-control radius-value"
+                   min="1"
+                   max="100"
+                   [(ngModel)]="nearbyRadiusInput">
+            <span class="radius-unit">km</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-search-nearby"
+                (click)="searchNearby()"
+                [disabled]="loadingNearby() || !nearbyLatInput || !nearbyLngInput">
+          @if (loadingNearby()) {
+            <span class="btn-spinner"></span>
+            Searching...
+          } @else {
+            🔍 Search Nearby Billboards
+          }
+        </button>
+      </div>
+
+      <!-- Search Results -->
+      @if (nearbyBillboards().length > 0 || nearbySearchLat()) {
+        <div class="nearby-results">
+          <div class="results-header">
+            <h3>
+              @if (nearbyBillboards().length > 0) {
+                Found {{ nearbyBillboards().length }} billboard(s) within {{ nearbySearchRadius() }}km
+              } @else {
+                No billboards found within {{ nearbySearchRadius() }}km
+              }
+            </h3>
+          </div>
+
+          @if (nearbyBillboards().length > 0) {
+            <!-- Map -->
+            <div class="nearby-map-container" #nearbyMapContainer></div>
+
+            <!-- Billboard List -->
+            <div class="nearby-billboard-list">
+              @for (billboard of nearbyBillboards(); track billboard.id) {
+                <div class="nearby-billboard-item" (click)="viewNearbyBillboardDetail(billboard)">
+                  <div class="nearby-billboard-image">
+                    @if (billboard.imagePaths && billboard.imagePaths.length > 0) {
+                      <img [src]="advertiserService.getImageUrl(billboard.imagePaths[0])" alt="Billboard">
+                    } @else {
+                      <div class="nearby-image-placeholder">🎯</div>
+                    }
+                  </div>
+                  <div class="nearby-billboard-info">
+                    <h4>{{ billboard.title }}</h4>
+                    <p class="nearby-location">📍 {{ billboard.location }}</p>
+                    <div class="nearby-meta">
+                      <span class="nearby-price">{{ formatCurrency(billboard.pricePerDay) }}/day</span>
+                      <span class="nearby-type">{{ getBillboardTypeInfo(billboard.type).icon }} {{ billboard.type }}</span>
+                      <span class="nearby-status" [class.available]="billboard.available">
+                        {{ billboard.available ? '✓ Available' : '✕ Booked' }}
+                      </span>
+                    </div>
+                  </div>
+                  <button class="btn btn-sm btn-view">View →</button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="nearby-empty">
+              <span class="nearby-empty-icon">🗺️</span>
+              <p>No billboards found in this area. Try increasing the search radius.</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Image Lightbox Modal -->
+@if (showLightbox()) {
+  <div class="lightbox-overlay" (click)="closeLightbox()" (keydown)="onLightboxKeydown($event)" tabindex="0" #lightboxOverlay>
+    <button class="lightbox-close" (click)="closeLightbox()">×</button>
+
+    <!-- Fixed Navigation Buttons -->
+    @if (lightboxImages().length > 1) {
+      <button class="lightbox-nav lightbox-prev" (click)="lightboxPrev($event)">
+        ‹
+      </button>
+      <button class="lightbox-nav lightbox-next" (click)="lightboxNext($event)">
+        ›
+      </button>
+    }
+
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <!-- Title -->
+      <div class="lightbox-header">
+        <h3>{{ lightboxTitle() }}</h3>
+        <span class="lightbox-counter">{{ lightboxCurrentIndex() + 1 }} / {{ lightboxImages().length }}</span>
+      </div>
+
+      <!-- Main Image Container -->
+      <div class="lightbox-image-container">
+        <!-- Image -->
+        <img [src]="lightboxImages()[lightboxCurrentIndex()]"
+             alt="Billboard Full View"
+             class="lightbox-image">
+
+        <!-- Auto-slide indicator -->
+        @if (lightboxImages().length > 1 && lightboxAutoSlide()) {
+          <div class="lightbox-autoslide-indicator">
+            <span class="autoslide-dot"></span>
+            <span>Auto-sliding</span>
+          </div>
+        }
+      </div>
+
+      <!-- Thumbnails -->
+      @if (lightboxImages().length > 1) {
+        <div class="lightbox-thumbnails">
+          @for (image of lightboxImages(); track $index; let i = $index) {
+            <button class="lightbox-thumb"
+                    [class.active]="lightboxCurrentIndex() === i"
+                    (click)="lightboxGoTo(i, $event)">
+              <img [src]="image" alt="Thumbnail {{ i + 1 }}">
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Pause/Play Button -->
+    @if (lightboxImages().length > 1) {
+      <button class="lightbox-pause-btn"
+              [class.paused]="!lightboxAutoSlide()"
+              (click)="toggleLightboxAutoSlide($event)"
+              [title]="lightboxAutoSlide() ? 'Pause slideshow' : 'Play slideshow'">
+        @if (lightboxAutoSlide()) {
+          ⏸️
+        } @else {
+          ▶️
+        }
+      </button>
+    }
+
+    <!-- Instructions -->
+    <div class="lightbox-instructions">
+      <span>← → Navigate • Space Pause/Play • ESC Close</span>
+    </div>
+  </div>
+}

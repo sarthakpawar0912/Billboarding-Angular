@@ -1,0 +1,822 @@
+<div class="kyc-management">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="animate-fade-in-up">
+        <span class="header-icon">🔐</span>
+        KYC Verification Center
+      </h1>
+      <p class="animate-fade-in-up delay-1">Manage user verifications, approvals, and account status</p>
+    </div>
+    <div class="header-actions animate-fade-in-up delay-2">
+      <button class="btn btn-outline" (click)="loadData()">
+        <span class="btn-icon">🔄</span>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Success/Error Messages -->
+  @if (successMessage()) {
+    <div class="alert alert-success animate-bounce-in">
+      <span class="alert-icon">✅</span>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger animate-bounce-in">
+      <span class="alert-icon">❌</span>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+  }
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card animate-scale-in delay-1" (click)="switchView('pending')">
+      <div class="stat-icon orange">
+        <span>⏳</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending KYC</span>
+      </div>
+      <div class="stat-glow orange"></div>
+    </div>
+
+    <div class="stat-card animate-scale-in delay-2" (click)="switchView('all'); statusFilter.set('APPROVED')">
+      <div class="stat-icon green">
+        <span>✅</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().approved }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+      <div class="stat-glow green"></div>
+    </div>
+
+    <div class="stat-card animate-scale-in delay-3" (click)="switchView('all'); statusFilter.set('REJECTED')">
+      <div class="stat-icon red">
+        <span>❌</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().rejected }}</span>
+        <span class="stat-label">Rejected</span>
+      </div>
+      <div class="stat-glow red"></div>
+    </div>
+
+    <div class="stat-card animate-scale-in delay-4">
+      <div class="stat-icon purple">
+        <span>🚫</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().blocked }}</span>
+        <span class="stat-label">Blocked Users</span>
+      </div>
+      <div class="stat-glow purple"></div>
+    </div>
+  </div>
+
+  <!-- View Toggle Tabs -->
+  <div class="view-tabs animate-fade-in-up delay-3">
+    <button
+      class="tab-btn"
+      [class.active]="viewMode() === 'pending'"
+      (click)="switchView('pending')"
+    >
+      <span class="tab-icon">⏳</span>
+      Pending Verification
+      @if (stats().pending > 0) {
+        <span class="tab-badge">{{ stats().pending }}</span>
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="viewMode() === 'all'"
+      (click)="switchView('all')"
+    >
+      <span class="tab-icon">👥</span>
+      All Users
+      <span class="tab-badge secondary">{{ stats().total }}</span>
+    </button>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="filter-bar animate-fade-in-up delay-4">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search by name, email, phone..."
+        [value]="searchTerm()"
+        (input)="onSearch($event)"
+      >
+    </div>
+
+    @if (viewMode() === 'all') {
+      <div class="filter-group">
+        <select
+          class="filter-select"
+          [value]="statusFilter()"
+          (change)="statusFilter.set($any($event.target).value)"
+        >
+          <option value="all">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+
+        <select
+          class="filter-select"
+          [value]="roleFilter()"
+          (change)="roleFilter.set($any($event.target).value)"
+        >
+          <option value="all">All Roles</option>
+          <option value="OWNER">Owners</option>
+          <option value="ADVERTISER">Advertisers</option>
+        </select>
+      </div>
+    }
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Loading users...</p>
+      </div>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-container animate-fade-in-up">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <h3>Something went wrong</h3>
+        <p>{{ error() }}</p>
+        <button class="btn btn-primary" (click)="loadData()">
+          Try Again
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading() && !error() && filteredUsers().length === 0) {
+    <div class="empty-state animate-fade-in-up">
+      @if (viewMode() === 'pending') {
+        <div class="empty-icon">🎉</div>
+        <h3>All Caught Up!</h3>
+        <p>There are no pending KYC requests at the moment.</p>
+      } @else {
+        <div class="empty-icon">👤</div>
+        <h3>No Users Found</h3>
+        <p>No users match your current filters.</p>
+      }
+    </div>
+  }
+
+  <!-- Users Table/Cards -->
+  @if (!loading() && !error() && filteredUsers().length > 0) {
+    <div class="users-grid animate-fade-in-up delay-5">
+      @for (user of filteredUsers(); track user.id; let i = $index) {
+        <div class="user-card" [style.animation-delay]="(i * 0.05) + 's'" [class.blocked]="user.blocked">
+          <!-- User Header -->
+          <div class="user-card-header">
+            <div class="user-avatar-section">
+              <div class="user-avatar-wrapper">
+                @if (user.profileImage) {
+                  <img
+                    [src]="user.profileImage"
+                    [alt]="user.name"
+                    class="user-avatar-img"
+                    [class.blocked-avatar]="user.blocked"
+                    (error)="onImageError($event)"
+                  >
+                } @else {
+                  <div class="user-avatar" [class.blocked-avatar]="user.blocked">
+                    {{ getInitials(user.name) }}
+                  </div>
+                }
+                @if (user.blocked) {
+                  <span class="blocked-indicator">🚫</span>
+                }
+              </div>
+              <div class="user-main-info">
+                <h3 class="user-name">{{ user.name }}</h3>
+                <span class="user-email">{{ user.email }}</span>
+              </div>
+            </div>
+            <div class="user-status">
+              @switch (user.kycStatus) {
+                @case ('PENDING') {
+                  <span class="status-badge status-pending">
+                    <span class="status-dot"></span>
+                    Pending
+                  </span>
+                }
+                @case ('APPROVED') {
+                  <span class="status-badge status-approved">
+                    <span class="status-dot"></span>
+                    Approved
+                  </span>
+                }
+                @case ('REJECTED') {
+                  <span class="status-badge status-rejected">
+                    <span class="status-dot"></span>
+                    Rejected
+                  </span>
+                }
+              }
+            </div>
+          </div>
+
+          <!-- User Details -->
+          <div class="user-card-body">
+            <div class="user-detail">
+              <span class="detail-icon">📱</span>
+              <span class="detail-label">Phone:</span>
+              <span class="detail-value">{{ user.phone || 'Not provided' }}</span>
+            </div>
+            <div class="user-detail">
+              <span class="detail-icon">{{ getRoleIcon(user.role) }}</span>
+              <span class="detail-label">Role:</span>
+              <span class="detail-value role-badge" [class]="'role-' + user.role.toLowerCase()">
+                {{ getRoleDisplay(user.role) }}
+              </span>
+            </div>
+            <div class="user-detail">
+              <span class="detail-icon">📅</span>
+              <span class="detail-label">Joined:</span>
+              <span class="detail-value">{{ formatDate(user.createdAt) }}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="user-card-actions">
+            @if (user.kycStatus === 'PENDING' && user.role !== 'ADMIN') {
+              <button
+                class="action-btn approve-btn"
+                title="Approve KYC"
+                (click)="openApproveModal(user)"
+              >
+                <span class="btn-icon">✓</span>
+                Approve
+              </button>
+              <button
+                class="action-btn reject-btn"
+                title="Reject KYC"
+                (click)="openRejectModal(user)"
+              >
+                <span class="btn-icon">✕</span>
+                Reject
+              </button>
+            }
+
+            @if (user.role !== 'ADMIN') {
+              @if (user.blocked) {
+                <button
+                  class="action-btn unblock-btn"
+                  title="Unblock User"
+                  (click)="openUnblockModal(user)"
+                >
+                  <span class="btn-icon">🔓</span>
+                  Unblock
+                </button>
+              } @else {
+                <button
+                  class="action-btn block-btn"
+                  title="Block User"
+                  (click)="openBlockModal(user)"
+                >
+                  <span class="btn-icon">🔒</span>
+                  Block
+                </button>
+              }
+            }
+
+            <button
+              class="action-btn view-btn"
+              title="View Details"
+              (click)="openUserDetailModal(user)"
+            >
+              <span class="btn-icon">👁</span>
+              View
+            </button>
+
+            <!-- 2FA Management Button -->
+            <button
+              class="action-btn twofa-btn"
+              title="Manage 2FA"
+              (click)="open2FAModal(user)"
+            >
+              <span class="btn-icon">🔐</span>
+              2FA
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Approve Modal -->
+  @if (showApproveModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-container approve-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon success-icon">
+            <span>✓</span>
+          </div>
+          <h2>Approve KYC Request</h2>
+          <button class="modal-close" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to approve the KYC verification for:</p>
+          <div class="user-preview">
+            <div class="preview-avatar-wrapper">
+              @if (selectedUser()?.profileImage) {
+                <img [src]="selectedUser()?.profileImage" [alt]="selectedUser()?.name" class="preview-avatar-img">
+              } @else {
+                <div class="preview-avatar">{{ getInitials(selectedUser()?.name || '') }}</div>
+              }
+            </div>
+            <div class="preview-info">
+              <strong>{{ selectedUser()?.name }}</strong>
+              <span>{{ selectedUser()?.email }}</span>
+              <span class="preview-role">{{ getRoleIcon(selectedUser()?.role || '') }} {{ getRoleDisplay(selectedUser()?.role || '') }}</span>
+            </div>
+          </div>
+          <div class="approval-notice">
+            <span class="notice-icon">ℹ️</span>
+            <p>This action will verify the user's identity and grant them full access to the platform.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            (click)="closeModals()"
+            [disabled]="processing()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-success"
+            (click)="confirmApprove()"
+            [disabled]="processing()"
+          >
+            @if (processing()) {
+              <span class="btn-spinner"></span>
+              Processing...
+            } @else {
+              <span>✓</span>
+              Approve KYC
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Reject Modal -->
+  @if (showRejectModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-container reject-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon danger-icon">
+            <span>✕</span>
+          </div>
+          <h2>Reject KYC Request</h2>
+          <button class="modal-close" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>You are about to reject the KYC verification for:</p>
+          <div class="user-preview reject">
+            <div class="preview-avatar-wrapper">
+              @if (selectedUser()?.profileImage) {
+                <img [src]="selectedUser()?.profileImage" [alt]="selectedUser()?.name" class="preview-avatar-img">
+              } @else {
+                <div class="preview-avatar reject">{{ getInitials(selectedUser()?.name || '') }}</div>
+              }
+            </div>
+            <div class="preview-info">
+              <strong>{{ selectedUser()?.name }}</strong>
+              <span>{{ selectedUser()?.email }}</span>
+              <span class="preview-role">{{ getRoleIcon(selectedUser()?.role || '') }} {{ getRoleDisplay(selectedUser()?.role || '') }}</span>
+            </div>
+          </div>
+          <div class="rejection-warning">
+            <span class="warning-icon">⚠️</span>
+            <p>The user will be notified and will need to resubmit their documents.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            (click)="closeModals()"
+            [disabled]="processing()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-danger"
+            (click)="confirmReject()"
+            [disabled]="processing()"
+          >
+            @if (processing()) {
+              <span class="btn-spinner"></span>
+              Processing...
+            } @else {
+              <span>✕</span>
+              Reject KYC
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Block Modal -->
+  @if (showBlockModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-container block-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon warning-icon">
+            <span>🔒</span>
+          </div>
+          <h2>Block User</h2>
+          <button class="modal-close" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to block this user?</p>
+          <div class="user-preview block">
+            <div class="preview-avatar-wrapper">
+              @if (selectedUser()?.profileImage) {
+                <img [src]="selectedUser()?.profileImage" [alt]="selectedUser()?.name" class="preview-avatar-img">
+              } @else {
+                <div class="preview-avatar block">{{ getInitials(selectedUser()?.name || '') }}</div>
+              }
+            </div>
+            <div class="preview-info">
+              <strong>{{ selectedUser()?.name }}</strong>
+              <span>{{ selectedUser()?.email }}</span>
+              <span class="preview-role">{{ getRoleIcon(selectedUser()?.role || '') }} {{ getRoleDisplay(selectedUser()?.role || '') }}</span>
+            </div>
+          </div>
+          <div class="block-warning">
+            <span class="warning-icon">⚠️</span>
+            <p>This user will be immediately logged out and prevented from accessing the platform. All their active bookings will remain but they won't be able to create new ones.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            (click)="closeModals()"
+            [disabled]="processing()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-warning"
+            (click)="confirmBlock()"
+            [disabled]="processing()"
+          >
+            @if (processing()) {
+              <span class="btn-spinner"></span>
+              Processing...
+            } @else {
+              <span>🔒</span>
+              Block User
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Unblock Modal -->
+  @if (showUnblockModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-container unblock-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon unlock-icon">
+            <span>🔓</span>
+          </div>
+          <h2>Unblock User</h2>
+          <button class="modal-close" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to unblock this user?</p>
+          <div class="user-preview unblock">
+            <div class="preview-avatar-wrapper">
+              @if (selectedUser()?.profileImage) {
+                <img [src]="selectedUser()?.profileImage" [alt]="selectedUser()?.name" class="preview-avatar-img">
+              } @else {
+                <div class="preview-avatar unblock">{{ getInitials(selectedUser()?.name || '') }}</div>
+              }
+            </div>
+            <div class="preview-info">
+              <strong>{{ selectedUser()?.name }}</strong>
+              <span>{{ selectedUser()?.email }}</span>
+              <span class="preview-role">{{ getRoleIcon(selectedUser()?.role || '') }} {{ getRoleDisplay(selectedUser()?.role || '') }}</span>
+            </div>
+          </div>
+          <div class="unblock-notice">
+            <span class="notice-icon">ℹ️</span>
+            <p>This user will regain full access to the platform immediately.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            (click)="closeModals()"
+            [disabled]="processing()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-success"
+            (click)="confirmUnblock()"
+            [disabled]="processing()"
+          >
+            @if (processing()) {
+              <span class="btn-spinner"></span>
+              Processing...
+            } @else {
+              <span>🔓</span>
+              Unblock User
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- User Detail Modal -->
+  @if (showUserDetailModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-container detail-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header detail-header">
+          <div class="detail-avatar-wrapper">
+            @if (selectedUser()?.profileImage) {
+              <img [src]="selectedUser()?.profileImage" [alt]="selectedUser()?.name" class="detail-avatar-img">
+            } @else {
+              <div class="detail-avatar-large">{{ getInitials(selectedUser()?.name || '') }}</div>
+            }
+          </div>
+          <div class="detail-header-info">
+            <h2>{{ selectedUser()?.name }}</h2>
+            <span class="detail-role-badge">
+              {{ getRoleIcon(selectedUser()?.role || '') }}
+              {{ getRoleDisplay(selectedUser()?.role || '') }}
+            </span>
+          </div>
+          <button class="modal-close" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-icon">✉️</span>
+              <div class="detail-content">
+                <label>Email Address</label>
+                <span>{{ selectedUser()?.email }}</span>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon">📱</span>
+              <div class="detail-content">
+                <label>Phone Number</label>
+                <span>{{ selectedUser()?.phone || 'Not provided' }}</span>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon">🆔</span>
+              <div class="detail-content">
+                <label>User ID</label>
+                <span>#{{ selectedUser()?.id }}</span>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <label>Registration Date</label>
+                <span>{{ formatDate(selectedUser()?.createdAt) }}</span>
+              </div>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-icon">🔐</span>
+              <div class="detail-content">
+                <label>KYC Status</label>
+                @switch (selectedUser()?.kycStatus) {
+                  @case ('PENDING') {
+                    <span class="status-badge status-pending">
+                      <span class="status-dot"></span>
+                      Pending Verification
+                    </span>
+                  }
+                  @case ('APPROVED') {
+                    <span class="status-badge status-approved">
+                      <span class="status-dot"></span>
+                      Verified
+                    </span>
+                  }
+                  @case ('REJECTED') {
+                    <span class="status-badge status-rejected">
+                      <span class="status-dot"></span>
+                      Rejected
+                    </span>
+                  }
+                }
+              </div>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-icon">🔒</span>
+              <div class="detail-content">
+                <label>Account Status</label>
+                @if (selectedUser()?.blocked) {
+                  <span class="status-badge status-blocked">
+                    <span class="status-dot"></span>
+                    Blocked
+                  </span>
+                } @else {
+                  <span class="status-badge status-active">
+                    <span class="status-dot"></span>
+                    Active
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeModals()">
+            Close
+          </button>
+          @if (selectedUser()?.kycStatus === 'PENDING' && selectedUser()?.role !== 'ADMIN') {
+            <button class="btn btn-success" (click)="closeModals(); openApproveModal(selectedUser()!)">
+              <span>✓</span> Approve
+            </button>
+            <button class="btn btn-danger" (click)="closeModals(); openRejectModal(selectedUser()!)">
+              <span>✕</span> Reject
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 2FA Management Modal -->
+  @if (show2FAModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-container twofa-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon twofa-icon">
+            <span>🔐</span>
+          </div>
+          <h2>Manage 2FA Settings</h2>
+          <button class="modal-close" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- User Info -->
+          <div class="user-preview twofa">
+            <div class="preview-avatar-wrapper">
+              @if (selectedUser()?.profileImage) {
+                <img [src]="selectedUser()?.profileImage" [alt]="selectedUser()?.name" class="preview-avatar-img">
+              } @else {
+                <div class="preview-avatar">{{ getInitials(selectedUser()?.name || '') }}</div>
+              }
+            </div>
+            <div class="preview-info">
+              <strong>{{ selectedUser()?.name }}</strong>
+              <span>{{ selectedUser()?.email }}</span>
+              <span class="preview-role">{{ getRoleIcon(selectedUser()?.role || '') }} {{ getRoleDisplay(selectedUser()?.role || '') }}</span>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          @if (loading2FAStatus()) {
+            <div class="twofa-loading">
+              <div class="spinner"></div>
+              <p>Loading 2FA status...</p>
+            </div>
+          }
+
+          <!-- 2FA Status Display -->
+          @if (!loading2FAStatus() && userTwoFactorStatus()) {
+            <div class="twofa-status-card">
+              <h4>Current 2FA Status</h4>
+              <div class="status-grid">
+                <div class="status-item">
+                  <span class="status-label">2FA Enabled:</span>
+                  @if (userTwoFactorStatus()?.twoFactorEnabled) {
+                    <span class="status-value enabled">✅ Yes</span>
+                  } @else {
+                    <span class="status-value disabled">❌ No</span>
+                  }
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Method:</span>
+                  <span class="status-value">{{ userTwoFactorStatus()?.twoFactorMethod || 'NONE' }}</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Admin Enforced:</span>
+                  @if (userTwoFactorStatus()?.forceTwoFactor) {
+                    <span class="status-value enforced">🔒 Yes</span>
+                  } @else {
+                    <span class="status-value">🔓 No</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="twofa-actions">
+              <h4>Actions</h4>
+
+              <!-- Enforce/Remove Enforcement -->
+              @if (userTwoFactorStatus()?.forceTwoFactor) {
+                <button
+                  class="btn btn-warning twofa-action-btn"
+                  (click)="removeForce2FA()"
+                  [disabled]="processing()"
+                >
+                  @if (processing()) {
+                    <span class="btn-spinner"></span>
+                  } @else {
+                    <span>🔓</span>
+                  }
+                  Remove 2FA Enforcement
+                </button>
+                <p class="action-desc">Allow user to manage their own 2FA settings</p>
+              } @else {
+                <button
+                  class="btn btn-primary twofa-action-btn"
+                  (click)="enforce2FA()"
+                  [disabled]="processing()"
+                >
+                  @if (processing()) {
+                    <span class="btn-spinner"></span>
+                  } @else {
+                    <span>🔒</span>
+                  }
+                  Enforce 2FA for User
+                </button>
+                <p class="action-desc">Require user to always have 2FA enabled</p>
+              }
+
+              <!-- Disable 2FA Completely -->
+              @if (userTwoFactorStatus()?.twoFactorEnabled) {
+                <button
+                  class="btn btn-danger twofa-action-btn"
+                  (click)="disable2FA()"
+                  [disabled]="processing()"
+                >
+                  @if (processing()) {
+                    <span class="btn-spinner"></span>
+                  } @else {
+                    <span>❌</span>
+                  }
+                  Disable 2FA Completely
+                </button>
+                <p class="action-desc">Turn off 2FA and remove all settings for this user</p>
+              }
+
+              <!-- Reset 2FA -->
+              @if (userTwoFactorStatus()?.twoFactorEnabled) {
+                <button
+                  class="btn btn-outline twofa-action-btn"
+                  (click)="reset2FA()"
+                  [disabled]="processing()"
+                >
+                  @if (processing()) {
+                    <span class="btn-spinner"></span>
+                  } @else {
+                    <span>🔄</span>
+                  }
+                  Reset 2FA
+                </button>
+                <p class="action-desc">Clear current 2FA setup - user will need to set up again</p>
+              }
+            </div>
+          }
+
+          <!-- Info Notice -->
+          <div class="twofa-notice">
+            <span class="notice-icon">ℹ️</span>
+            <p>User will receive an email notification for any changes made to their 2FA settings.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeModals()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

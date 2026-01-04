@@ -1,0 +1,110 @@
+<div class="login-history-container">
+  <div class="header">
+    <h3>Login History</h3>
+    <div class="actions">
+      <button
+        (click)="refresh()"
+        [disabled]="isLoading()"
+        class="btn-refresh">
+        @if (!isLoading()) {
+          <span>↻ Refresh</span>
+        } @else {
+          <span>Loading...</span>
+        }
+      </button>
+      <button
+        (click)="exportToCsv()"
+        [disabled]="allLoginHistory().length === 0"
+        class="btn-export">
+        ⬇ Export CSV
+      </button>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="error-message">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading() && loginHistory().length === 0) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading login history...</p>
+    </div>
+  }
+
+  @if (!isLoading() && allLoginHistory().length === 0 && !errorMessage()) {
+    <div class="empty-state">
+      <p>No login history available</p>
+    </div>
+  }
+
+  @if (loginHistory().length > 0) {
+    <div class="table-container">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>IP Address</th>
+            <th>Device</th>
+            <th>Browser</th>
+            <th>2FA Used</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of loginHistory(); track entry.id) {
+            <tr [class]="getStatusClass(entry.status || 'SUCCESS')" [class.risky-row]="isRiskyLogin(entry)">
+              <td class="timestamp">
+                <div class="time-primary">{{ formatLoginTime(entry.loginAt) }}</div>
+                <div class="time-secondary">{{ entry.loginAt | date:'medium' }}</div>
+                @if (isRiskyLogin(entry)) {
+                  <span class="risky-badge" title="Unusual login activity detected">⚠️ Risky</span>
+                }
+              </td>
+              <td class="ip-address">
+                <span class="ip">{{ getIpAddress(entry) }}</span>
+                @if (entry.location) {
+                  <div class="location">{{ entry.location }}</div>
+                }
+              </td>
+              <td class="device">
+                <span class="icon">{{ getDeviceIcon(entry.userAgent) }}</span>
+                <span>{{ getDeviceDisplay(entry.userAgent) }}</span>
+              </td>
+              <td class="browser">
+                <span class="icon">{{ getBrowserIcon(entry.userAgent) }}</span>
+                <span>{{ getBrowserDisplay(entry.userAgent) }}</span>
+              </td>
+              <td class="twofa">
+                <span [class]="'badge ' + get2FAClass(entry.twoFactorUsed)">
+                  {{ get2FABadge(entry.twoFactorUsed) }}
+                </span>
+              </td>
+              <td class="status">
+                <span [class]="'status-badge ' + getStatusClass(entry.status || 'SUCCESS')">
+                  <span class="icon">{{ getStatusIcon(entry.status || 'SUCCESS') }}</span>
+                  <span>{{ entry.status || 'SUCCESS' }}</span>
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Show More Button -->
+    @if (hasMoreToShow()) {
+      <div class="show-more-container">
+        <button class="btn-show-more" (click)="showMore()">
+          Show More ({{ getRemainingCount() }} remaining)
+        </button>
+      </div>
+    }
+
+    <div class="footer">
+      <p>Showing {{ loginHistory().length }} of {{ allLoginHistory().length }} login {{ allLoginHistory().length === 1 ? 'entry' : 'entries' }}</p>
+    </div>
+  }
+</div>

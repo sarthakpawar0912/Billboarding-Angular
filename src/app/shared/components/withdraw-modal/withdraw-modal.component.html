@@ -1,0 +1,236 @@
+<nz-modal
+  [(nzVisible)]="isVisible"
+  [nzTitle]="getModalTitle()"
+  [nzFooter]="null"
+  (nzOnCancel)="closeModal()"
+  [nzClosable]="withdrawalStep !== 'processing'"
+  [nzMaskClosable]="withdrawalStep !== 'processing'"
+  [nzWidth]="520"
+  [nzBodyStyle]="{ 'max-height': '85vh', 'overflow-y': 'auto', 'padding': '0' }"
+  nzCentered
+>
+  <ng-container *nzModalContent>
+    <div class="withdraw-modal-wrapper">
+      <!-- STEP 1: INPUT -->
+      @if (withdrawalStep === 'input') {
+        <div class="withdraw-modal-content">
+          <!-- Available Balance Card -->
+          <div class="available-balance-card">
+            <div class="balance-label">Available Balance</div>
+            <div class="balance-value">{{ formatCurrency(availableBalance) }}</div>
+          </div>
+
+          <!-- Amount Input -->
+          <div class="form-group">
+            <label>Withdrawal Amount (INR)</label>
+            <div class="amount-input-wrapper">
+              <nz-input-number
+                [(ngModel)]="withdrawAmount"
+                [nzMin]="minAmount"
+                [nzMax]="availableBalance"
+                [nzStep]="100"
+                [nzPrecision]="2"
+                [nzPlaceHolder]="'Enter amount (min ' + formatCurrency(minAmount) + ')'"
+                style="width: 100%"
+              ></nz-input-number>
+              <button
+                nz-button
+                nzType="link"
+                class="max-btn"
+                (click)="setMaxAmount()"
+              >
+                MAX
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Select Buttons -->
+          <div class="quick-select">
+            <span class="quick-label">Quick Select:</span>
+            <div class="quick-buttons">
+              <button nz-button nzSize="small" (click)="setPercentage(0.25)">25%</button>
+              <button nz-button nzSize="small" (click)="setPercentage(0.50)">50%</button>
+              <button nz-button nzSize="small" (click)="setPercentage(0.75)">75%</button>
+              <button nz-button nzSize="small" nzType="primary" nzGhost (click)="setMaxAmount()">MAX</button>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          @if (withdrawAmount >= minAmount) {
+            <div class="withdrawal-summary">
+              <div class="summary-row">
+                <span>Withdrawal Amount:</span>
+                <span class="amount">{{ formatCurrency(withdrawAmount) }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Remaining Balance:</span>
+                <span>{{ formatCurrency(availableBalance - withdrawAmount) }}</span>
+              </div>
+            </div>
+          }
+
+          <!-- Bank Info Section -->
+          @if (bankDetails) {
+            <div class="bank-info-section">
+              <div class="bank-info-header">
+                <span nz-icon nzType="bank" nzTheme="outline"></span>
+                <span>Transfer to</span>
+              </div>
+              <div class="bank-info-details">
+                <span class="bank-name">{{ bankDetails.bankName }}</span>
+                <span class="account-number">{{ bankDetails.maskedAccountNumber }}</span>
+              </div>
+            </div>
+          }
+
+          <!-- Info Alert -->
+          <div class="info-alert">
+            <span nz-icon nzType="exclamation-circle" nzTheme="outline"></span>
+            <span>Funds will be transferred via IMPS to your registered bank account. This is a test mode simulation.</span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="modal-actions">
+            <button nz-button nzType="default" (click)="closeModal()">Cancel</button>
+            <button
+              nz-button
+              nzType="primary"
+              [disabled]="!isWithdrawValid()"
+              (click)="startWithdrawal()"
+            >
+              <span nz-icon nzType="arrow-right" nzTheme="outline"></span>
+              Proceed to Transfer
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- STEP 2: PROCESSING -->
+      @if (withdrawalStep === 'processing') {
+        <div class="processing-content">
+          <!-- Amount being transferred -->
+          <div class="processing-amount">
+            <span class="label">Transferring</span>
+            <span class="amount">{{ formatCurrency(withdrawAmount) }}</span>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-container">
+            <nz-progress
+              [nzPercent]="processingProgress"
+              [nzShowInfo]="false"
+              nzStatus="active"
+              [nzStrokeColor]="{ '0%': '#667eea', '100%': '#764ba2' }"
+            ></nz-progress>
+          </div>
+
+          <!-- Processing Steps -->
+          <div class="processing-steps">
+            <nz-steps [nzCurrent]="currentProcessingStep" nzDirection="vertical" nzSize="small">
+              @for (step of processingSteps; track step.title) {
+                <nz-step
+                  [nzTitle]="step.title"
+                  [nzDescription]="step.description"
+                  [nzStatus]="step.status"
+                  [nzIcon]="step.status === 'process' ? 'loading' : undefined"
+                ></nz-step>
+              }
+            </nz-steps>
+          </div>
+
+          <!-- Bank Info -->
+          @if (bankDetails) {
+            <div class="processing-bank-info">
+              <span nz-icon nzType="bank" nzTheme="outline"></span>
+              <span>{{ bankDetails.bankName }} - {{ bankDetails.maskedAccountNumber }}</span>
+            </div>
+          }
+
+          <!-- Security Notice -->
+          <div class="security-notice">
+            <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
+            <span>Secured by 256-bit encryption</span>
+          </div>
+        </div>
+      }
+
+      <!-- STEP 3: SUCCESS -->
+      @if (withdrawalStep === 'success' && successData) {
+        <div class="success-receipt">
+          <!-- Receipt Header -->
+          <div class="receipt-header">
+            <div class="receipt-icon">
+              <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+            </div>
+            <div class="receipt-title">Transfer Successful</div>
+            <div class="receipt-amount">{{ formatCurrency(successData.amount) }}</div>
+          </div>
+
+          <!-- Receipt Body -->
+          <div class="receipt-body">
+            <div class="receipt-details">
+              <div class="receipt-row">
+                <span class="receipt-label">UTR Number</span>
+                <span class="receipt-value highlight">{{ successData.utr }}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Transfer To</span>
+                <span class="receipt-value">{{ successData.bankName }}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Account</span>
+                <span class="receipt-value">{{ successData.accountNumber }}</span>
+              </div>
+              @if (showPayoutId && successData.razorpayPayoutId) {
+                <div class="receipt-row">
+                  <span class="receipt-label">Payout ID</span>
+                  <span class="receipt-value mono">{{ successData.razorpayPayoutId }}</span>
+                </div>
+              }
+              <div class="receipt-row">
+                <span class="receipt-label">Date & Time</span>
+                <span class="receipt-value">{{ successData.time }}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Mode</span>
+                <span class="receipt-value">{{ successData.transferMode || 'IMPS' }}</span>
+              </div>
+            </div>
+
+            <!-- Success Notice -->
+            <div class="receipt-notice">
+              <span nz-icon nzType="info-circle" nzTheme="outline"></span>
+              <span>Funds credited to your bank. You may receive an SMS confirmation.</span>
+            </div>
+          </div>
+
+          <!-- Receipt Footer -->
+          <div class="receipt-footer">
+            <button nz-button nzType="primary" nzSize="large" nzBlock (click)="closeModal()">
+              Done
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- STEP 4: FAILED -->
+      @if (withdrawalStep === 'failed') {
+        <div class="failed-content">
+          <nz-result
+            nzStatus="error"
+            nzTitle="Transfer Failed"
+            nzSubTitle="We couldn't complete your transfer. Please try again."
+          >
+            <div nz-result-extra>
+              <button nz-button nzType="primary" (click)="retryWithdrawal()">
+                <span nz-icon nzType="reload" nzTheme="outline"></span>
+                Try Again
+              </button>
+              <button nz-button (click)="closeModal()">Cancel</button>
+            </div>
+          </nz-result>
+        </div>
+      }
+    </div>
+  </ng-container>
+</nz-modal>

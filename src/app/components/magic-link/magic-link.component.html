@@ -1,0 +1,52 @@
+<div class="magic-link-container">
+  <div class="magic-link-card">
+    <!-- Verifying State -->
+    @if (isVerifying()) {
+      <div class="state-verifying">
+        <div class="spinner-large"></div>
+        <h2>Verifying Magic Link</h2>
+        <p>Please wait while we verify your login...</p>
+      </div>
+    }
+
+    <!-- Success State -->
+    @if (!isVerifying() && isSuccess()) {
+      <div class="state-success">
+        <div class="success-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h2>Login Successful!</h2>
+        <p>You have been successfully authenticated via magic link.</p>
+        <div class="countdown">
+          Redirecting to your dashboard in <span class="countdown-number">{{ countdown() }}</span> seconds...
+        </div>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (!isVerifying() && !isSuccess()) {
+      <div class="state-error">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h2>Magic Link Failed</h2>
+        <p class="error-message">{{ errorMessage() }}</p>
+        <div class="error-actions">
+          <button class="btn-primary" (click)="requestNewLink()">
+            Request New Magic Link
+          </button>
+          <button class="btn-secondary" (click)="goToSignIn()">
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

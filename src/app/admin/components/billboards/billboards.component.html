@@ -1,0 +1,276 @@
+<div class="billboards-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Billboard Management</h1>
+      <p>Manage and approve billboard listings across all cities</p>
+    </div>
+    <button class="btn btn-primary" (click)="loadBillboards()">
+      <span>🔄</span> Refresh
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading billboards...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-state">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="loadBillboards()">Try Again</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-pill" [class.active]="statusFilter() === 'all'" (click)="onStatusFilter('all')">
+      <span class="stat-count">{{ stats().total }}</span>
+      <span class="stat-label">All</span>
+    </div>
+    <div class="stat-pill pending" [class.active]="statusFilter() === 'pending'" (click)="onStatusFilter('pending')">
+      <span class="stat-count">{{ stats().pending }}</span>
+      <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-pill approved" [class.active]="statusFilter() === 'approved'" (click)="onStatusFilter('approved')">
+      <span class="stat-count">{{ stats().approved }}</span>
+      <span class="stat-label">Approved</span>
+    </div>
+    <div class="stat-pill rejected" [class.active]="statusFilter() === 'rejected'" (click)="onStatusFilter('rejected')">
+      <span class="stat-count">{{ stats().rejected }}</span>
+      <span class="stat-label">Rejected</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search billboards..." (input)="onSearch($event)">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" (change)="onTypeFilter($event)">
+        <option value="all">All Types</option>
+        <option value="hoarding">Hoarding</option>
+        <option value="digital">Digital</option>
+        <option value="unipole">Unipole</option>
+        <option value="poster">Poster</option>
+      </select>
+      <button class="view-toggle" (click)="toggleViewMode()">
+        {{ viewMode() === 'grid' ? '📋' : '🔲' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Table View -->
+  @if (viewMode() === 'table') {
+    <div class="card">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Billboard</th>
+              <th>Owner</th>
+              <th>Location</th>
+              <th>Type</th>
+              <th>Size</th>
+              <th>Price</th>
+              <th>Views</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (billboard of filteredBillboards(); track billboard.id) {
+              <tr>
+                <td>
+                  <div class="billboard-cell">
+                    <img [src]="billboard.images[0]" alt="Billboard" (click)="viewBillboard(billboard)">
+                    <div class="billboard-info">
+                      <span class="billboard-title">{{ billboard.title }}</span>
+                      <span class="billboard-date">Added {{ formatDate(billboard.createdAt) }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ billboard.ownerName }}</td>
+                <td>
+                  <div class="location-cell">
+                    <span class="city">{{ billboard.location.city }}</span>
+                    <span class="address">{{ billboard.location.address }}</span>
+                  </div>
+                </td>
+                <td><span class="type-badge">{{ billboard.type }}</span></td>
+                <td>{{ billboard.size }}</td>
+                <td>
+                  @if (editingPrice() === billboard.id) {
+                    <div class="price-edit">
+                      <input type="number" [ngModel]="newPrice()" (ngModelChange)="newPrice.set($event)">
+                      <button class="btn-icon" (click)="savePrice(billboard.id)">✓</button>
+                      <button class="btn-icon" (click)="cancelEditPrice()">✕</button>
+                    </div>
+                  } @else {
+                    <div class="price-cell">
+                      <span>{{ formatCurrency(billboard.basePrice) }}</span>
+                      <button class="btn-icon-sm" (click)="startEditPrice(billboard.id, billboard.basePrice)">✏️</button>
+                    </div>
+                  }
+                </td>
+                <td>
+                  <div class="views-cell">
+                    <span>👁️ {{ billboard.views | number }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" [ngClass]="getStatusClass(billboard.status)">
+                    {{ billboard.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn" title="View" (click)="viewBillboard(billboard)">👁️</button>
+                    @if (billboard.status === 'pending') {
+                      <button class="action-btn success" title="Approve" (click)="approveBillboard(billboard.id)">✓</button>
+                      <button class="action-btn danger" title="Reject" (click)="rejectBillboard(billboard.id)">✕</button>
+                    }
+                    @if (billboard.status === 'approved' || billboard.status === 'blocked') {
+                      <button class="action-btn warning" title="Admin Block" (click)="blockBillboard(billboard.id)">🚫</button>
+                    }
+                    @if (billboard.status === 'admin-blocked') {
+                      <button class="action-btn success" title="Unblock" (click)="unblockBillboard(billboard.id)">✅</button>
+                    }
+                    <button class="action-btn danger" title="Delete" (click)="deleteBillboard(billboard.id)">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <div class="empty-content">
+                    <span class="empty-icon">📭</span>
+                    <h3>No billboards found</h3>
+                    <p>Try adjusting your search or filter criteria</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Grid View -->
+  @if (viewMode() === 'grid') {
+    <div class="billboards-grid">
+      @for (billboard of filteredBillboards(); track billboard.id) {
+        <div class="billboard-card">
+          <div class="card-image">
+            <img [src]="billboard.images[0]" alt="Billboard">
+            <span class="status-badge" [ngClass]="getStatusClass(billboard.status)">
+              {{ billboard.status }}
+            </span>
+            <span class="type-badge">{{ billboard.type }}</span>
+          </div>
+          <div class="card-content">
+            <h3>{{ billboard.title }}</h3>
+            <p class="owner">by {{ billboard.ownerName }}</p>
+            <div class="card-meta">
+              <span>📍 {{ billboard.location.city }}</span>
+              <span>📐 {{ billboard.size }}</span>
+            </div>
+            <div class="card-stats">
+              <span>👁️ {{ billboard.views | number }} views</span>
+              <span>📅 {{ billboard.bookings }} bookings</span>
+            </div>
+            <div class="card-price">
+              {{ formatCurrency(billboard.basePrice) }}<span>/month</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-outline" (click)="viewBillboard(billboard)">View Details</button>
+            @if (billboard.status === 'pending') {
+              <button class="btn btn-sm btn-success" (click)="approveBillboard(billboard.id)">Approve</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } <!-- end of grid view -->
+  } <!-- end of !loading && !error -->
+
+  <!-- Detail Modal -->
+  @if (showModal() && selectedBillboard()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeModal()">✕</button>
+        <div class="modal-header">
+          <img [src]="selectedBillboard()!.images[0]" alt="Billboard">
+        </div>
+        <div class="modal-body">
+          <div class="modal-title-row">
+            <h2>{{ selectedBillboard()!.title }}</h2>
+            <span class="status-badge" [ngClass]="getStatusClass(selectedBillboard()!.status)">
+              {{ selectedBillboard()!.status }}
+            </span>
+          </div>
+          <p class="modal-owner">by {{ selectedBillboard()!.ownerName }}</p>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Location</span>
+              <span class="detail-value">{{ selectedBillboard()!.location.address }}, {{ selectedBillboard()!.location.city }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Type</span>
+              <span class="detail-value">{{ selectedBillboard()!.type }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Size</span>
+              <span class="detail-value">{{ selectedBillboard()!.size }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Base Price</span>
+              <span class="detail-value price">{{ formatCurrency(selectedBillboard()!.basePrice) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Views</span>
+              <span class="detail-value">{{ selectedBillboard()!.views | number }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Bookings</span>
+              <span class="detail-value">{{ selectedBillboard()!.bookings }}</span>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            @if (selectedBillboard()!.status === 'pending') {
+              <button class="btn btn-success" (click)="approveBillboard(selectedBillboard()!.id)">
+                ✓ Approve Billboard
+              </button>
+              <button class="btn btn-danger" (click)="rejectBillboard(selectedBillboard()!.id)">
+                ✕ Reject Billboard
+              </button>
+            }
+            @if (selectedBillboard()!.status === 'approved' || selectedBillboard()!.status === 'blocked') {
+              <button class="btn btn-warning" (click)="blockBillboard(selectedBillboard()!.id)">
+                🚫 Admin Block
+              </button>
+            }
+            @if (selectedBillboard()!.status === 'admin-blocked') {
+              <button class="btn btn-success" (click)="unblockBillboard(selectedBillboard()!.id)">
+                ✅ Unblock Billboard
+              </button>
+            }
+            <button class="btn btn-outline" (click)="closeModal()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

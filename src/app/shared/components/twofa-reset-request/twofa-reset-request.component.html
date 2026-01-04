@@ -1,0 +1,95 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Reset Two-Factor Authentication</h2>
+      <button class="close-btn" (click)="close()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Success State -->
+      <div *ngIf="isSuccess()" class="success-state">
+        <div class="success-icon">✓</div>
+        <h3>Reset Email Sent!</h3>
+        <div class="success-message">
+          {{ successMessage() }}
+        </div>
+        <button (click)="close()" class="btn-primary">
+          Close
+        </button>
+      </div>
+
+      <!-- Request Form -->
+      <form *ngIf="!isSuccess()" [formGroup]="resetForm" (ngSubmit)="onSubmit()">
+        <div class="warning-box">
+          <strong>⚠️ Lost Access to Your 2FA Device?</strong>
+          <p>
+            If you've lost access to your authenticator app or can't receive email codes,
+            we can help you regain access to your account.
+          </p>
+        </div>
+
+        <div class="info-box">
+          <strong>How it works:</strong>
+          <ol>
+            <li>Enter your email address below</li>
+            <li>We'll send a secure reset link to your email</li>
+            <li>Click the link to reset your 2FA settings</li>
+            <li>You'll be able to set up 2FA again from scratch</li>
+          </ol>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address <span class="required">*</span></label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-input"
+            placeholder="Enter your account email"
+            [class.error]="hasError('required') || hasError('email')">
+
+          <div *ngIf="hasError('required')" class="error-text">
+            Email is required
+          </div>
+          <div *ngIf="hasError('email')" class="error-text">
+            Please enter a valid email address
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage()" class="error-message">
+          {{ errorMessage() }}
+        </div>
+
+        <div class="security-notice">
+          <strong>🔒 Security Notice:</strong>
+          <p>
+            For your security, the reset link will expire in 1 hour.
+            If you didn't request this reset, please ignore this message and contact support immediately.
+          </p>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            [disabled]="resetForm.invalid || isSubmitting()"
+            class="btn-primary">
+            {{ isSubmitting() ? 'Sending...' : 'Send Reset Link' }}
+          </button>
+          <button
+            type="button"
+            (click)="close()"
+            class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+
+        <div class="help-text">
+          <p>
+            Still having trouble?
+            <a href="mailto:support@example.com" class="link">Contact Support</a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

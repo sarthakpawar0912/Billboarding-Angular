@@ -1,0 +1,421 @@
+<div class="bookings-page">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading bookings...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span>⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-sm" (click)="loadBookings()">Retry</button>
+    </div>
+  }
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Booking Management</h1>
+      <p>View and manage all billboard bookings</p>
+    </div>
+    <button class="btn btn-outline" (click)="loadBookings()">
+      <span>🔄</span> Refresh
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card" (click)="onStatusFilter('all')" [class.active]="statusFilter() === 'all'">
+      <div class="stat-icon blue">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().total }}</span>
+        <span class="stat-label">Total Bookings</span>
+      </div>
+    </div>
+    <div class="stat-card" (click)="onStatusFilter('pending')" [class.active]="statusFilter() === 'pending'">
+      <div class="stat-icon orange">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending Approval</span>
+      </div>
+    </div>
+    <div class="stat-card" (click)="onStatusFilter('approved')" [class.active]="statusFilter() === 'approved'">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().approved }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+    </div>
+    <div class="stat-card revenue">
+      <div class="stat-icon purple">💰</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats().totalRevenue) }}</span>
+        <span class="stat-label">Collected Revenue</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Stats Row -->
+  <div class="stats-grid secondary">
+    <div class="stat-card small" (click)="onStatusFilter('completed')" [class.active]="statusFilter() === 'completed'">
+      <div class="stat-icon teal">🏁</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().completed }}</span>
+        <span class="stat-label">Completed</span>
+      </div>
+    </div>
+    <div class="stat-card small" (click)="onStatusFilter('rejected')" [class.active]="statusFilter() === 'rejected'">
+      <div class="stat-icon red">❌</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().rejected }}</span>
+        <span class="stat-label">Rejected</span>
+      </div>
+    </div>
+    <div class="stat-card small" (click)="onStatusFilter('cancelled')" [class.active]="statusFilter() === 'cancelled'">
+      <div class="stat-icon gray">🚫</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().cancelled }}</span>
+        <span class="stat-label">Cancelled</span>
+      </div>
+    </div>
+    <div class="stat-card small">
+      <div class="stat-icon yellow">💳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats().expectedRevenue) }}</span>
+        <span class="stat-label">Pending Payment</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search by billboard, advertiser, owner or booking ID..." (input)="onSearch($event)">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" #statusSelect (change)="onStatusFilter(statusSelect.value)">
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="completed">Completed</option>
+        <option value="rejected">Rejected</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select class="filter-select" #paymentSelect (change)="onPaymentFilter(paymentSelect.value)">
+        <option value="all">All Payment Status</option>
+        <option value="pending">Payment Pending</option>
+        <option value="paid">Paid</option>
+        <option value="not_paid">Not Paid</option>
+        <option value="failed">Failed</option>
+        <option value="refunded">Refunded</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="card">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Billboard</th>
+            <th>Advertiser</th>
+            <th>Owner</th>
+            <th>Duration</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (booking of filteredBookings(); track booking.id) {
+            <tr>
+              <td class="id-cell">#{{ booking.id }}</td>
+              <td>
+                <div class="billboard-cell">
+                  <span class="billboard-title">{{ getBillboardTitle(booking) }}</span>
+                  <span class="billboard-location">{{ getBillboardLocation(booking) }}</span>
+                  @if (booking.billboard?.type) {
+                    <span class="billboard-type" [class]="'type-' + booking.billboard.type.toLowerCase()">
+                      {{ booking.billboard.type }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <td>
+                <div class="user-cell">
+                  <span class="user-name">{{ getAdvertiserName(booking) }}</span>
+                  <span class="user-email">{{ getAdvertiserEmail(booking) }}</span>
+                  @if (booking.advertiser?.phone) {
+                    <span class="user-phone">📞 {{ booking.advertiser.phone }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <div class="user-cell">
+                  <span class="user-name">{{ getOwnerName(booking) }}</span>
+                  <span class="user-email">{{ getOwnerEmail(booking) }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="duration-cell">
+                  <span class="date-range">{{ formatDateShort(booking.startDate) }} - {{ formatDateShort(booking.endDate) }}</span>
+                  <span class="days-count">{{ calculateDays(booking.startDate, booking.endDate) }} days</span>
+                </div>
+              </td>
+              <td class="amount-cell">{{ formatCurrency(booking.totalPrice) }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(booking.status)">
+                  {{ booking.status }}
+                </span>
+              </td>
+              <td>
+                <span class="payment-badge" [ngClass]="getPaymentClass(booking.paymentStatus)">
+                  {{ booking.paymentStatus.replace('_', ' ') }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn" title="View Details" (click)="viewBooking(booking)">👁️</button>
+                  <button class="action-btn audit" title="Audit Trail" (click)="viewAudit(booking)">📜</button>
+                  @if (booking.status === 'PENDING') {
+                    <button class="action-btn success" title="Approve" (click)="approveBooking(booking.id)" [disabled]="processing()">✓</button>
+                    <button class="action-btn danger" title="Reject" (click)="rejectBooking(booking.id)" [disabled]="processing()">✕</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="empty-state">
+                <div class="empty-content">
+                  <span class="empty-icon">📭</span>
+                  <h3>No bookings found</h3>
+                  <p>@if (statusFilter() !== 'all' || paymentFilter() !== 'all') { Try changing the filters } @else { No bookings have been made yet }</p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  @if (showModal() && selectedBooking()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeModal()">✕</button>
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <h2>Booking Details</h2>
+            <span class="booking-id-badge">Booking #{{ selectedBooking()!.id }}</span>
+          </div>
+          <div class="modal-status-badges">
+            <span class="status-badge lg" [ngClass]="getStatusClass(selectedBooking()!.status)">
+              {{ selectedBooking()!.status }}
+            </span>
+            <span class="payment-badge lg" [ngClass]="getPaymentClass(selectedBooking()!.paymentStatus)">
+              {{ selectedBooking()!.paymentStatus.replace('_', ' ') }}
+            </span>
+          </div>
+        </div>
+        <div class="modal-body">
+          <!-- Billboard Section -->
+          <div class="detail-section">
+            <h4 class="section-title">🏢 Billboard Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Title</span>
+                <span class="detail-value">{{ getBillboardTitle(selectedBooking()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ getBillboardLocation(selectedBooking()!) }}</span>
+              </div>
+              @if (selectedBooking()!.billboard?.type) {
+                <div class="detail-item">
+                  <span class="detail-label">Type</span>
+                  <span class="detail-value">{{ selectedBooking()!.billboard.type }}</span>
+                </div>
+              }
+              @if (selectedBooking()!.billboard?.size) {
+                <div class="detail-item">
+                  <span class="detail-label">Size</span>
+                  <span class="detail-value">{{ selectedBooking()!.billboard.size }}</span>
+                </div>
+              }
+              @if (selectedBooking()!.billboard?.pricePerDay) {
+                <div class="detail-item">
+                  <span class="detail-label">Price/Day</span>
+                  <span class="detail-value">{{ formatCurrency(selectedBooking()!.billboard.pricePerDay!) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Advertiser Section -->
+          <div class="detail-section">
+            <h4 class="section-title">👤 Advertiser</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-value">{{ getAdvertiserName(selectedBooking()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Email</span>
+                <span class="detail-value">{{ getAdvertiserEmail(selectedBooking()!) }}</span>
+              </div>
+              @if (selectedBooking()!.advertiser?.phone) {
+                <div class="detail-item">
+                  <span class="detail-label">Phone</span>
+                  <span class="detail-value">{{ selectedBooking()!.advertiser.phone }}</span>
+                </div>
+              }
+              <div class="detail-item">
+                <span class="detail-label">KYC Status</span>
+                <span class="detail-value kyc-status" [class]="'kyc-' + selectedBooking()!.advertiser?.kycStatus?.toLowerCase()">
+                  {{ selectedBooking()!.advertiser?.kycStatus || 'N/A' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Owner Section -->
+          <div class="detail-section">
+            <h4 class="section-title">🏠 Billboard Owner</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-value">{{ getOwnerName(selectedBooking()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Email</span>
+                <span class="detail-value">{{ getOwnerEmail(selectedBooking()!) }}</span>
+              </div>
+              @if (selectedBooking()!.billboard?.owner?.phone) {
+                <div class="detail-item">
+                  <span class="detail-label">Phone</span>
+                  <span class="detail-value">{{ selectedBooking()!.billboard.owner.phone }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Booking Details Section -->
+          <div class="detail-section">
+            <h4 class="section-title">📅 Booking Details</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Start Date</span>
+                <span class="detail-value">{{ formatDate(selectedBooking()!.startDate) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">End Date</span>
+                <span class="detail-value">{{ formatDate(selectedBooking()!.endDate) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">{{ calculateDays(selectedBooking()!.startDate, selectedBooking()!.endDate) }} days</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Amount</span>
+                <span class="detail-value price">{{ formatCurrency(selectedBooking()!.totalPrice) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Booking Date</span>
+                <span class="detail-value">{{ formatDate(selectedBooking()!.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            @if (selectedBooking()!.status === 'PENDING') {
+              <button class="btn btn-success" (click)="approveBooking(selectedBooking()!.id); closeModal()" [disabled]="processing()">
+                ✓ Approve Booking
+              </button>
+              <button class="btn btn-danger" (click)="rejectBooking(selectedBooking()!.id); closeModal()" [disabled]="processing()">
+                ✕ Reject Booking
+              </button>
+            }
+            <button class="btn btn-outline" (click)="closeModal()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Audit Trail Modal -->
+  @if (showAuditModal() && selectedBooking()) {
+    <div class="modal-overlay" (click)="closeAuditModal()">
+      <div class="modal-content audit-modal" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeAuditModal()">✕</button>
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <h2>📜 Audit Trail</h2>
+            <span class="booking-id-badge">Booking #{{ selectedBooking()!.id }}</span>
+          </div>
+          <p class="audit-subtitle">{{ getBillboardTitle(selectedBooking()!) }}</p>
+        </div>
+        <div class="modal-body">
+          @if (auditLoading()) {
+            <div class="audit-loading">
+              <div class="spinner"></div>
+              <p>Loading audit trail...</p>
+            </div>
+          } @else if (auditError()) {
+            <div class="audit-error">
+              <span class="error-icon">⚠️</span>
+              <p>{{ auditError() }}</p>
+              <button class="btn btn-sm btn-primary" (click)="viewAudit(selectedBooking()!)">Retry</button>
+            </div>
+          } @else if (auditData() && auditData()!.history && auditData()!.history.length > 0) {
+            <div class="audit-timeline">
+              @for (entry of auditData()!.history; track $index; let first = $first; let last = $last) {
+                <div class="audit-entry" [class.first]="first" [class.last]="last">
+                  <div class="audit-line"></div>
+                  <div class="audit-dot" [ngClass]="getAuditActionClass(entry.action)">
+                    {{ getAuditActionIcon(entry.action) }}
+                  </div>
+                  <div class="audit-content" [ngClass]="getAuditActionClass(entry.action)">
+                    <div class="audit-header">
+                      <span class="audit-action">{{ entry.action }}</span>
+                      <span class="audit-time">{{ formatDateTime(entry.timestamp) }}</span>
+                    </div>
+                    <div class="audit-meta">
+                      <span class="audit-user">
+                        <span class="user-icon">👤</span>
+                        {{ entry.performedBy }}
+                      </span>
+                    </div>
+                    @if (entry.details) {
+                      <div class="audit-details">
+                        {{ entry.details }}
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="audit-empty">
+              <span class="empty-icon">📭</span>
+              <h3>No Audit History</h3>
+              <p>No actions have been recorded for this booking yet.</p>
+            </div>
+          }
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" (click)="closeAuditModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

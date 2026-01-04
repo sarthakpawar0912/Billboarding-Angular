@@ -1,0 +1,185 @@
+<div class="owners-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Billboard Owners</h1>
+      <p>Manage and verify billboard owner accounts</p>
+    </div>
+    <button class="btn btn-primary" (click)="loadOwners()">
+      <span>🔄</span> Refresh
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading owners...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-state">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="loadOwners()">Try Again</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-pill" [class.active]="statusFilter() === 'all'" (click)="onStatusFilter('all')">
+        <span class="stat-count">{{ stats().total }}</span>
+        <span class="stat-label">Total Owners</span>
+      </div>
+      <div class="stat-pill pending" [class.active]="statusFilter() === 'pending'" (click)="onStatusFilter('pending')">
+        <span class="stat-count">{{ stats().pending }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+      <div class="stat-pill approved" [class.active]="statusFilter() === 'approved'" (click)="onStatusFilter('approved')">
+        <span class="stat-count">{{ stats().approved }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+      <div class="stat-pill blocked" [class.active]="statusFilter() === 'blocked'" (click)="onStatusFilter('blocked')">
+        <span class="stat-count">{{ stats().blocked }}</span>
+        <span class="stat-label">Blocked</span>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search by name, email or company..." (input)="onSearch($event)">
+      </div>
+    </div>
+
+    <!-- Owners Grid -->
+    <div class="owners-grid">
+    @for (owner of filteredOwners(); track owner.id) {
+      <div class="owner-card">
+        <div class="owner-header">
+          <div class="owner-avatar">{{ owner.name.charAt(0) }}</div>
+          <span class="status-badge" [ngClass]="getStatusClass(owner.status)">
+            {{ owner.status }}
+          </span>
+        </div>
+        <div class="owner-body">
+          <h3>{{ owner.name }}</h3>
+          <p class="company">{{ owner.company }}</p>
+          <div class="owner-details">
+            <div class="detail-row">
+              <span class="icon">📧</span>
+              <span>{{ owner.email }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="icon">📞</span>
+              <span>{{ owner.phone }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="icon">📅</span>
+              <span>Joined {{ formatDate(owner.joinedAt) }}</span>
+            </div>
+          </div>
+          <div class="owner-stats">
+            <div class="stat-item">
+              <span class="stat-value">{{ owner.totalBillboards }}</span>
+              <span class="stat-label">Billboards</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value earnings">{{ formatCurrency(owner.earnings) }}</span>
+              <span class="stat-label">Earnings</span>
+            </div>
+          </div>
+        </div>
+        <div class="owner-actions">
+          <button class="btn btn-sm btn-outline" (click)="viewOwner(owner)">View Profile</button>
+          @if (owner.status === 'pending') {
+            <button class="btn btn-sm btn-success" (click)="approveOwner(owner.id)">Approve</button>
+            <button class="btn btn-sm btn-danger" (click)="rejectOwner(owner.id)">Reject</button>
+          }
+          @if (owner.status === 'approved' || owner.status === 'rejected') {
+            <button class="btn btn-sm btn-warning" (click)="blockOwner(owner.id)">Block</button>
+          }
+          @if (owner.status === 'blocked') {
+            <button class="btn btn-sm btn-success" (click)="unblockOwner(owner.id)">Unblock</button>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <span class="empty-icon">👥</span>
+        <h3>No owners found</h3>
+        <p>Try adjusting your search criteria</p>
+      </div>
+    }
+    </div>
+  }
+
+  <!-- Detail Modal -->
+  @if (showModal() && selectedOwner()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeModal()">✕</button>
+        <div class="modal-header">
+          <div class="modal-avatar">{{ selectedOwner()!.name.charAt(0) }}</div>
+          <div class="modal-title">
+            <h2>{{ selectedOwner()!.name }}</h2>
+            <p>{{ selectedOwner()!.company }}</p>
+            <span class="status-badge" [ngClass]="getStatusClass(selectedOwner()!.status)">
+              {{ selectedOwner()!.status }}
+            </span>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{{ selectedOwner()!.email }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value">{{ selectedOwner()!.phone }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Billboards</span>
+              <span class="detail-value">{{ selectedOwner()!.totalBillboards }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Earnings</span>
+              <span class="detail-value earnings">{{ formatCurrency(selectedOwner()!.earnings) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Joined Date</span>
+              <span class="detail-value">{{ formatDate(selectedOwner()!.joinedAt) }}</span>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            @if (selectedOwner()!.status === 'pending') {
+              <button class="btn btn-success" (click)="approveOwner(selectedOwner()!.id)">
+                ✓ Approve Owner
+              </button>
+              <button class="btn btn-danger" (click)="rejectOwner(selectedOwner()!.id)">
+                ✕ Reject Owner
+              </button>
+            }
+            @if (selectedOwner()!.status === 'approved' || selectedOwner()!.status === 'rejected') {
+              <button class="btn btn-warning" (click)="blockOwner(selectedOwner()!.id)">
+                Block Owner
+              </button>
+            }
+            @if (selectedOwner()!.status === 'blocked') {
+              <button class="btn btn-success" (click)="unblockOwner(selectedOwner()!.id)">
+                ✓ Unblock Owner
+              </button>
+            }
+            <button class="btn btn-outline" (click)="closeModal()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

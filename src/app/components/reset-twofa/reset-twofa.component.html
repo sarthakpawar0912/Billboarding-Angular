@@ -1,0 +1,120 @@
+<div class="reset-container">
+  <div class="reset-card">
+    <div class="logo-section">
+      <h1>Reset Two-Factor Authentication</h1>
+    </div>
+
+    <!-- Success State -->
+    <div *ngIf="isSuccess()" class="success-state">
+      <div class="success-icon">✓</div>
+      <h2>2FA Reset Successful!</h2>
+      <div class="success-message">
+        {{ successMessage() }}
+      </div>
+
+      <!-- Important post-reset instructions -->
+      <div class="post-reset-info">
+        <div class="info-item">
+          <span class="info-icon">1️⃣</span>
+          <p><strong>Next login:</strong> You will login WITHOUT 2FA verification.</p>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">2️⃣</span>
+          <p><strong>Re-enable 2FA:</strong> After logging in, go to Security Settings to set up 2FA again.</p>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">⚠️</span>
+          <p><strong>Google Authenticator:</strong> You must scan a new QR code to re-enable authenticator app.</p>
+        </div>
+      </div>
+
+      <div class="redirect-info">
+        <p>Redirecting to login page in 5 seconds...</p>
+        <a routerLink="/signin" class="link">Click here to login now</a>
+      </div>
+    </div>
+
+    <!-- Verifying State -->
+    <div *ngIf="isVerifying() && !isSuccess()" class="verifying-state">
+      <div class="spinner"></div>
+      <p>Verifying your reset token...</p>
+      <p class="subtext">Please wait while we process your request</p>
+    </div>
+
+    <!-- Error State with Manual Token Input -->
+    <div *ngIf="!isSuccess() && !isVerifying()" class="form-state">
+      <!-- Auto-verification failed message -->
+      <div *ngIf="autoVerified() && errorMessage()" class="auto-verify-failed">
+        <p>⚠️ Automatic verification failed. Please enter your reset token manually below.</p>
+      </div>
+
+      <!-- Instructions -->
+      <div class="instructions" *ngIf="!autoVerified()">
+        <p>
+          Enter the reset token from the email we sent you to reset your two-factor authentication settings.
+        </p>
+      </div>
+
+      <!-- Manual Token Form -->
+      <form [formGroup]="tokenForm" (ngSubmit)="confirmReset()">
+        <div class="form-group">
+          <label for="token">Reset Token <span class="required">*</span></label>
+          <input
+            type="text"
+            id="token"
+            formControlName="token"
+            class="form-input"
+            placeholder="Enter your reset token"
+            [class.error]="hasError('required') || hasError('minlength')">
+
+          <div *ngIf="hasError('required')" class="error-text">
+            Reset token is required
+          </div>
+          <div *ngIf="hasError('minlength')" class="error-text">
+            Please enter a valid reset token
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage() && !autoVerified()" class="error-message">
+          {{ errorMessage() }}
+        </div>
+
+        <div *ngIf="errorMessage() && autoVerified()" class="error-message">
+          {{ errorMessage() }}
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="tokenForm.invalid || isVerifying()"
+          class="btn-submit">
+          {{ isVerifying() ? 'Verifying...' : 'Reset 2FA' }}
+        </button>
+      </form>
+
+      <div class="help-section">
+        <div class="divider">
+          <span>Need Help?</span>
+        </div>
+
+        <div class="help-links">
+          <a routerLink="/signin" class="link">← Back to Login</a>
+          <span class="separator">•</span>
+          <a href="mailto:support@example.com" class="link">Contact Support</a>
+        </div>
+
+        <div class="info-box">
+          <strong>ℹ️ About Reset Tokens</strong>
+          <ul>
+            <li>Reset tokens are valid for 1 hour</li>
+            <li>You can only use a reset token once</li>
+            <li>After reset, you'll need to set up 2FA again</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 Your App. All rights reserved.</p>
+  </div>
+</div>

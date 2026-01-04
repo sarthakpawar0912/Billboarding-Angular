@@ -1,0 +1,322 @@
+<div class="dashboard">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading dashboard...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="loadDashboardData()">Retry</button>
+    </div>
+  }
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Dashboard</h1>
+      <p>Overview of your billboard platform</p>
+    </div>
+    <button class="btn btn-outline" (click)="loadDashboardData()">
+      Refresh
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon users">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2563eb" width="24" height="24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats()?.totalUsers || 0 }}</span>
+        <span class="stat-label">Total Users</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon owners">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#059669" width="24" height="24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats()?.totalOwners || 0 }}</span>
+        <span class="stat-label">Owners</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon advertisers">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#d97706" width="24" height="24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46" />
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats()?.totalAdvertisers || 0 }}</span>
+        <span class="stat-label">Advertisers</span>
+      </div>
+    </div>
+
+    <div class="stat-card highlight">
+      <div class="stat-icon revenue">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#7c3aed" width="24" height="24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 8.25H9m6 3H9m3 6-3-3h1.5a3 3 0 1 0 0-6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats()?.totalRevenue || 0) }}</span>
+        <span class="stat-label">Total Revenue</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Stats -->
+  <div class="stats-row">
+    <div class="mini-stat">
+      <span class="mini-value">{{ stats()?.totalBillboards || 0 }}</span>
+      <span class="mini-label">Billboards</span>
+      <span class="mini-badge green">{{ stats()?.availableBillboards || 0 }} available</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-value">{{ stats()?.totalBookings || 0 }}</span>
+      <span class="mini-label">Bookings</span>
+      <span class="mini-badge blue">{{ stats()?.approvedBookings || 0 }} approved</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-value">{{ stats()?.pendingBookings || 0 }}</span>
+      <span class="mini-label">Pending</span>
+      <span class="mini-badge orange">needs review</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-value">{{ stats()?.totalBlockedUsers || 0 }}</span>
+      <span class="mini-label">Blocked</span>
+      <span class="mini-badge red">users</span>
+    </div>
+  </div>
+
+  <!-- Alert Cards -->
+  @if (stats()?.totalPendingKyc || stats()?.pendingBookings) {
+    <div class="alerts-row">
+      @if (stats()?.totalPendingKyc) {
+        <div class="alert-card warning">
+          <div class="alert-content">
+            <strong>{{ stats()?.totalPendingKyc }} Pending KYC</strong>
+            <span>Users waiting for verification</span>
+          </div>
+          <a routerLink="/admin/kyc" class="btn btn-sm">Review</a>
+        </div>
+      }
+      @if (stats()?.pendingBookings) {
+        <div class="alert-card info">
+          <div class="alert-content">
+            <strong>{{ stats()?.pendingBookings }} Pending Bookings</strong>
+            <span>Awaiting approval</span>
+          </div>
+          <a routerLink="/admin/bookings" class="btn btn-sm">View</a>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <!-- Revenue Chart -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Revenue Overview</h3>
+        <span class="badge">Last 6 Months</span>
+      </div>
+      <div class="chart-container">
+        <div class="bar-chart">
+          @for (data of monthlyRevenue(); track data.month) {
+            <div class="bar-item">
+              <div class="bar" [style.height.%]="data.revenue > 0 ? Math.max((data.revenue / getMaxRevenue()) * 100, 5) : 5"></div>
+              <span class="bar-label">{{ data.month }}</span>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Total: <strong>{{ formatCurrency(stats()?.totalRevenue || 0) }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Booking Stats -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Booking Status</h3>
+      </div>
+      <div class="status-list">
+        <div class="status-item">
+          <span class="status-dot green"></span>
+          <span class="status-name">Approved</span>
+          <div class="status-bar">
+            <div class="status-fill green" [style.width.%]="stats()?.totalBookings ? (stats()!.approvedBookings / stats()!.totalBookings) * 100 : 0"></div>
+          </div>
+          <span class="status-count">{{ stats()?.approvedBookings || 0 }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot orange"></span>
+          <span class="status-name">Pending</span>
+          <div class="status-bar">
+            <div class="status-fill orange" [style.width.%]="stats()?.totalBookings ? (stats()!.pendingBookings / stats()!.totalBookings) * 100 : 0"></div>
+          </div>
+          <span class="status-count">{{ stats()?.pendingBookings || 0 }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot red"></span>
+          <span class="status-name">Rejected</span>
+          <div class="status-bar">
+            <div class="status-fill red" [style.width.%]="stats()?.totalBookings ? (stats()!.rejectedBookings / stats()!.totalBookings) * 100 : 0"></div>
+          </div>
+          <span class="status-count">{{ stats()?.rejectedBookings || 0 }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot gray"></span>
+          <span class="status-name">Cancelled</span>
+          <div class="status-bar">
+            <div class="status-fill gray" [style.width.%]="stats()?.totalBookings ? (stats()!.cancelledBookings / stats()!.totalBookings) * 100 : 0"></div>
+          </div>
+          <span class="status-count">{{ stats()?.cancelledBookings || 0 }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Bookings</h3>
+        <a routerLink="/admin/bookings" class="link">View All</a>
+      </div>
+      <div class="bookings-list">
+        @if (recentBookings().length === 0) {
+          <div class="empty-state">
+            <p>No bookings yet</p>
+          </div>
+        }
+        @for (booking of recentBookings(); track booking.id) {
+          <div class="booking-row">
+            <div class="booking-info">
+              <span class="booking-title">{{ getBillboardTitle(booking) }}</span>
+              <span class="booking-sub">{{ getAdvertiserDisplay(booking) }}</span>
+            </div>
+            <span class="booking-amount">{{ formatCurrency(booking.totalPrice) }}</span>
+            <span class="status-tag" [ngClass]="getStatusClass(booking.status)">{{ booking.status }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Top Cities -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Top Cities</h3>
+      </div>
+      <div class="cities-list">
+        @if (topCities().length === 0) {
+          <div class="empty-state">
+            <p>No data available</p>
+          </div>
+        }
+        @for (city of topCities(); track city.city; let i = $index) {
+          <div class="city-row">
+            <span class="city-rank" [class.top]="i < 3">{{ i + 1 }}</span>
+            <span class="city-name">{{ city.city }}</span>
+            <div class="city-bar">
+              <div class="city-fill" [style.width.%]="(city.count / (topCities()[0]?.count || 1)) * 100"></div>
+            </div>
+            <span class="city-count">{{ city.count }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Users -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Recent Users</h3>
+      <a routerLink="/admin/kyc" class="link">View All</a>
+    </div>
+    <div class="table-wrapper">
+      @if (users().length === 0) {
+        <div class="empty-state">
+          <p>No users found</p>
+        </div>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>KYC Status</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users().slice(0, 5); track user.id) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar">{{ user.name?.charAt(0) || user.email.charAt(0).toUpperCase() }}</div>
+                    <div class="user-info">
+                      <span class="user-name">{{ user.name || 'User' }}</span>
+                      <span class="user-email">{{ user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="role-tag" [class.owner]="user.role === 'OWNER'">{{ user.role }}</span></td>
+                <td><span class="status-tag" [ngClass]="getStatusClass(user.kycStatus)">{{ user.kycStatus }}</span></td>
+                <td><span class="status-tag" [class.active]="!user.blocked" [class.blocked]="user.blocked">{{ user.blocked ? 'Blocked' : 'Active' }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="quick-links">
+    <a routerLink="/admin/kyc" class="quick-link">
+      <span class="ql-icon users">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2563eb" width="20" height="20">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+        </svg>
+      </span>
+      <span class="ql-text">Manage Users</span>
+    </a>
+    <a routerLink="/admin/billboards" class="quick-link">
+      <span class="ql-icon billboards">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#059669" width="20" height="20">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+        </svg>
+      </span>
+      <span class="ql-text">Billboards</span>
+    </a>
+    <a routerLink="/admin/bookings" class="quick-link">
+      <span class="ql-icon bookings">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#d97706" width="20" height="20">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+        </svg>
+      </span>
+      <span class="ql-text">Bookings</span>
+    </a>
+    <a routerLink="/admin/settings" class="quick-link">
+      <span class="ql-icon settings">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#6b7280" width="20" height="20">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        </svg>
+      </span>
+      <span class="ql-text">Settings</span>
+    </a>
+  </div>
+</div>

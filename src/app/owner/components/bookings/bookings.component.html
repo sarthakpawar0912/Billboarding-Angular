@@ -1,0 +1,784 @@
+<div class="bookings-page">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading bookings...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span>⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-sm" (click)="loadAllData()">Retry</button>
+    </div>
+  }
+
+  <!-- Success Toast -->
+  @if (successMessage()) {
+    <div class="toast-success">
+      <span class="toast-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <!-- Error Toast -->
+  @if (errorMessage()) {
+    <div class="toast-error">
+      <span class="toast-icon">✕</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>📅 Booking Management</h1>
+      <p>Manage booking requests from advertisers for your billboards</p>
+    </div>
+    <button class="btn btn-outline" (click)="loadAllData()">
+      <span>🔄</span> Refresh
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card" (click)="setActiveTab('all')" [class.active]="activeTab() === 'all'">
+      <div class="stat-icon blue">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().total }}</span>
+        <span class="stat-label">Total Bookings</span>
+      </div>
+    </div>
+    <div class="stat-card" (click)="setActiveTab('requests')" [class.active]="activeTab() === 'requests'">
+      <div class="stat-icon orange">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending Requests</span>
+      </div>
+      @if (stats().pending > 0) {
+        <span class="stat-badge pulse">New</span>
+      }
+    </div>
+    <div class="stat-card" (click)="setActiveTab('upcoming')" [class.active]="activeTab() === 'upcoming'">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().approved }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+    </div>
+    <div class="stat-card revenue">
+      <div class="stat-icon purple">💰</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats().totalEarnings) }}</span>
+        <span class="stat-label">Total Earnings</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-container">
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab() === 'all'" (click)="setActiveTab('all')">
+        <span class="tab-icon">📋</span>
+        All Bookings
+        <span class="tab-count">{{ stats().total }}</span>
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'requests'" (click)="setActiveTab('requests')">
+        <span class="tab-icon">⏳</span>
+        Pending Requests
+        @if (stats().pending > 0) {
+          <span class="tab-count warning">{{ stats().pending }}</span>
+        }
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'upcoming'" (click)="setActiveTab('upcoming')">
+        <span class="tab-icon">📆</span>
+        Upcoming
+        <span class="tab-count">{{ upcomingBookings().length }}</span>
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'completed'" (click)="setActiveTab('completed')">
+        <span class="tab-icon">✔️</span>
+        Completed
+        <span class="tab-count">{{ stats().completed }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text"
+             placeholder="Search by billboard, advertiser, or booking ID..."
+             (input)="onSearch($event)">
+    </div>
+    <div class="filter-group">
+      @if (activeTab() === 'all') {
+        <select class="filter-select" (change)="onStatusFilter($event)">
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="completed">Completed</option>
+          <option value="rejected">Rejected</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      }
+      <select class="filter-select" (change)="onPaymentFilter($event)">
+        <option value="all">All Payment</option>
+        <option value="pending">Payment Pending</option>
+        <option value="paid">Paid</option>
+        <option value="not_paid">Not Paid</option>
+        <option value="failed">Failed</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Bookings Grid (2 cards per row) -->
+  <div class="ubc-grid">
+    @for (booking of sortedDisplayedBookings(); track booking.id) {
+      <div class="unified-booking-card" [class.pending]="booking.status === 'PENDING'">
+        <!-- Status Bar -->
+        <div class="ubc-status-bar" [class]="'status-' + booking.status.toLowerCase().replace('_', '-')"></div>
+
+        <!-- Card Header -->
+        <div class="ubc-header">
+          <div class="ubc-header-info">
+            <h3 class="ubc-title">
+              <span class="ubc-booking-id">#{{ booking.id }}</span>
+              {{ getBillboardTitle(booking) }}
+              @if (booking.billboard?.type) {
+                <span class="ubc-badge" style="font-size: 9px; padding: 2px 6px;" [class]="'type-' + booking.billboard.type.toLowerCase()">
+                  {{ booking.billboard.type }}
+                </span>
+              }
+            </h3>
+            <p class="ubc-location">
+              <span class="ubc-location-icon">📍</span>
+              {{ getBillboardLocation(booking) }}
+            </p>
+          </div>
+          <div class="ubc-badges">
+            <span class="ubc-badge" [class]="'status-' + booking.status.toLowerCase()">
+              <span class="ubc-badge-dot"></span>
+              {{ booking.status }}
+            </span>
+            <span class="ubc-badge" [class]="'payment-' + booking.paymentStatus.toLowerCase().replace('_', '-')">
+              {{ getPaymentStatusIcon(booking.paymentStatus) }} {{ booking.paymentStatus.replace('_', ' ') }}
+            </span>
+            @if (isActiveCampaign(booking)) {
+              <span class="ubc-badge" style="background: #7c3aed; color: white;">🎯 LIVE</span>
+            }
+            @if (isAwaitingPayment(booking)) {
+              <span class="ubc-badge" style="background: #2563eb; color: white;">⏳ Awaiting Payment</span>
+            }
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="ubc-body">
+          <!-- Row 1: Advertiser + Campaign Period -->
+          <div class="ubc-details-row">
+            <div class="ubc-detail-item">
+              <span class="ubc-detail-icon">👤</span>
+              <div class="ubc-detail-content">
+                <span class="ubc-detail-label">Advertiser</span>
+                <span class="ubc-detail-value">{{ getAdvertiserName(booking) }}</span>
+                <span class="ubc-detail-sub">{{ getAdvertiserEmail(booking) }}</span>
+                @if (getAdvertiserPhone(booking)) {
+                  <span class="ubc-detail-sub">📞 {{ getAdvertiserPhone(booking) }}</span>
+                }
+              </div>
+            </div>
+            <div class="ubc-detail-item">
+              <span class="ubc-detail-icon">📆</span>
+              <div class="ubc-detail-content">
+                <span class="ubc-detail-label">Campaign Period</span>
+                <span class="ubc-detail-value">{{ formatDate(booking.startDate) }} - {{ formatDate(booking.endDate) }}</span>
+                <span class="ubc-detail-sub">{{ calculateDays(booking.startDate, booking.endDate) }} days</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Booked On + Amount/Discount (for non-pending) -->
+          @if (booking.status !== 'PENDING') {
+            <div class="ubc-details-row">
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">📅</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Booked On</span>
+                  <span class="ubc-detail-value">{{ formatDate(booking.createdAt) }}</span>
+                </div>
+              </div>
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">💰</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Amount</span>
+                  <span class="ubc-detail-value amount">{{ formatCurrency(booking.totalPrice) }}</span>
+                  @if (booking.paymentStatus === 'PAID') {
+                    <span class="ubc-detail-sub paid-tag">✅ PAID</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: Discount + Per-day Price (for non-pending) -->
+            <div class="ubc-details-row">
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">🏷️</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Discount</span>
+                  @if (booking.discountPercent && (booking.discountPercent || 0) > 0) {
+                    <span class="ubc-detail-value discount-value">{{ booking.discountPercent }}% OFF</span>
+                    <span class="ubc-detail-sub">Saved {{ formatCurrency(booking.discountAmount || 0) }}</span>
+                  } @else {
+                    <span class="ubc-detail-value">No discount</span>
+                  }
+                </div>
+              </div>
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">📊</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Per-day Rate</span>
+                  @if (booking.billboard?.pricePerDay) {
+                    <span class="ubc-detail-value">{{ formatCurrency(booking.billboard.pricePerDay!) }}/day</span>
+                  } @else {
+                    <span class="ubc-detail-value">-</span>
+                  }
+                </div>
+              </div>
+            </div>
+          } @else {
+            <!-- For PENDING: Just show Booked On in a single row -->
+            <div class="ubc-details-row">
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">📅</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Booked On</span>
+                  <span class="ubc-detail-value">{{ formatDate(booking.createdAt) }}</span>
+                </div>
+              </div>
+              <div class="ubc-detail-item">
+                <span class="ubc-detail-icon">📊</span>
+                <div class="ubc-detail-content">
+                  <span class="ubc-detail-label">Per-day Rate</span>
+                  @if (booking.billboard?.pricePerDay) {
+                    <span class="ubc-detail-value">{{ formatCurrency(booking.billboard.pricePerDay!) }}/day</span>
+                  } @else {
+                    <span class="ubc-detail-value">-</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- PENDING REQUEST: Show Price Breakdown with Discount Option -->
+          @if (booking.status === 'PENDING') {
+            <div class="pending-approval-section" style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; border: 1px solid #f59e0b;">
+              <h4 style="margin: 0 0 12px 0; color: #92400e; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                <span>💰</span> Price Summary (Before Approval)
+              </h4>
+
+              <!-- Price Breakdown -->
+              <div style="background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                @if (booking.originalBaseAmount && booking.discountPercent && (booking.discountPercent || 0) > 0) {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #6b7280; font-size: 0.9em;">
+                    <span>Original Amount</span>
+                    <span>{{ formatCurrency(booking.originalBaseAmount || 0) }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #16a34a; font-size: 0.9em;">
+                    <span>🏷️ Discount ({{ booking.discountPercent }}%)</span>
+                    <span>- {{ formatCurrency(booking.discountAmount || 0) }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9em;">
+                    <span>Base Amount (After Discount)</span>
+                    <span>{{ formatCurrency(booking.baseAmount || 0) }}</span>
+                  </div>
+                } @else {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9em;">
+                    <span>Base Amount</span>
+                    <span>{{ formatCurrency(booking.baseAmount || booking.totalPrice) }}</span>
+                  </div>
+                }
+                @if (booking.commissionAmount) {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #6b7280; font-size: 0.85em;">
+                    <span>Platform Fee</span>
+                    <span>+ {{ formatCurrency(booking.commissionAmount) }}</span>
+                  </div>
+                }
+                @if (booking.gstAmount) {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #6b7280; font-size: 0.85em;">
+                    <span>GST ({{ booking.gstPercentage || 18 }}%)</span>
+                    <span>+ {{ formatCurrency(booking.gstAmount) }}</span>
+                  </div>
+                }
+                <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 2px solid #e5e7eb; font-weight: 700; font-size: 1.1em; color: #1f2937;">
+                  <span>Final Amount to Pay</span>
+                  <span>{{ formatCurrency(booking.totalPrice) }}</span>
+                </div>
+              </div>
+
+              <!-- Discount Button (Prominent) -->
+              <button
+                class="btn"
+                (click)="openDiscountModal(booking)"
+                [disabled]="processing()"
+                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; margin-bottom: 12px; cursor: pointer;"
+              >
+                @if (booking.discountPercent && (booking.discountPercent || 0) > 0) {
+                  🏷️ Modify Discount (Currently {{ booking.discountPercent }}% OFF)
+                } @else {
+                  🏷️ Apply Discount (Optional - Up to 50% OFF)
+                }
+              </button>
+
+              <!-- Approve/Reject Buttons -->
+              <div style="display: flex; gap: 12px;">
+                <button
+                  class="btn btn-success"
+                  (click)="approveBooking(booking.id)"
+                  [disabled]="processing()"
+                  style="flex: 1; padding: 12px; font-weight: 600; font-size: 1rem; border-radius: 8px;"
+                >
+                  ✓ Approve &#64; {{ formatCurrency(booking.totalPrice) }}
+                </button>
+                <button
+                  class="btn btn-danger"
+                  (click)="rejectBooking(booking.id)"
+                  [disabled]="processing()"
+                  style="flex: 1; padding: 12px; font-weight: 600; font-size: 1rem; border-radius: 8px;"
+                >
+                  ✕ Reject
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Card Actions -->
+        <div class="ubc-actions">
+          <div class="ubc-actions-left">
+            <button class="ubc-btn ubc-btn-default" (click)="viewBooking(booking)">
+              <span class="ubc-btn-icon">👁️</span>
+              <span class="ubc-btn-text">Details</span>
+            </button>
+
+            <!-- Discount Button for APPROVED unpaid bookings -->
+            @if (booking.status === 'APPROVED' && booking.paymentStatus !== 'PAID') {
+              <button
+                class="ubc-btn ubc-btn-primary"
+                (click)="openDiscountModal(booking)"
+                [disabled]="processing()"
+              >
+                <span class="ubc-btn-icon">🏷️</span>
+                <span class="ubc-btn-text">
+                  @if (booking.discountPercent && (booking.discountPercent || 0) > 0) {
+                    {{ booking.discountPercent }}% Discount
+                  } @else {
+                    Add Discount
+                  }
+                </span>
+              </button>
+            }
+          </div>
+
+          <div class="ubc-actions-right">
+            @if (isActiveCampaign(booking)) {
+              <span class="ubc-campaign-badge">
+                <span>🎯</span>
+                <span class="ubc-btn-text">Campaign Running</span>
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <span class="empty-icon">
+          @switch (activeTab()) {
+            @case ('requests') { ⏳ }
+            @case ('upcoming') { 📆 }
+            @case ('completed') { ✔️ }
+            @default { 📅 }
+          }
+        </span>
+        <h3>
+          @switch (activeTab()) {
+            @case ('requests') { No pending requests }
+            @case ('upcoming') { No upcoming bookings }
+            @case ('completed') { No completed bookings }
+            @default { No bookings found }
+          }
+        </h3>
+        <p>
+          @switch (activeTab()) {
+            @case ('requests') { All booking requests have been processed }
+            @case ('upcoming') { You don't have any upcoming bookings }
+            @case ('completed') { No bookings have been completed yet }
+            @default { Try adjusting your filters or wait for advertisers to book }
+          }
+        </p>
+      </div>
+    }
+  </div>
+
+  <!-- Detail Modal -->
+  @if (showModal() && selectedBooking()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeModal()">✕</button>
+
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <h2>Booking Details</h2>
+            <span class="booking-id-badge">Booking #{{ selectedBooking()!.id }}</span>
+          </div>
+          <div class="modal-status-badges">
+            <span class="status-badge lg" [ngClass]="getStatusClass(selectedBooking()!.status)">
+              {{ selectedBooking()!.status }}
+            </span>
+            <span class="payment-badge lg" [ngClass]="getPaymentClass(selectedBooking()!.paymentStatus)">
+              {{ selectedBooking()!.paymentStatus.replace('_', ' ') }}
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <!-- Billboard Section -->
+          <div class="detail-section">
+            <h4 class="section-title">🏢 Billboard Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Title</span>
+                <span class="detail-value">{{ getBillboardTitle(selectedBooking()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ getBillboardLocation(selectedBooking()!) }}</span>
+              </div>
+              @if (selectedBooking()!.billboard?.type) {
+                <div class="detail-item">
+                  <span class="detail-label">Type</span>
+                  <span class="detail-value">{{ selectedBooking()!.billboard.type }}</span>
+                </div>
+              }
+              @if (selectedBooking()!.billboard?.size) {
+                <div class="detail-item">
+                  <span class="detail-label">Size</span>
+                  <span class="detail-value">{{ selectedBooking()!.billboard.size }}</span>
+                </div>
+              }
+              @if (selectedBooking()!.billboard?.pricePerDay) {
+                <div class="detail-item">
+                  <span class="detail-label">Price/Day</span>
+                  <span class="detail-value">{{ formatCurrency(selectedBooking()!.billboard.pricePerDay!) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Advertiser Section -->
+          <div class="detail-section">
+            <h4 class="section-title">👤 Advertiser Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-value">{{ getAdvertiserName(selectedBooking()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Email</span>
+                <span class="detail-value">{{ getAdvertiserEmail(selectedBooking()!) }}</span>
+              </div>
+              @if (selectedBooking()!.advertiser?.phone) {
+                <div class="detail-item">
+                  <span class="detail-label">Phone</span>
+                  <span class="detail-value">{{ selectedBooking()!.advertiser.phone }}</span>
+                </div>
+              }
+              @if (selectedBooking()!.advertiser?.kycStatus) {
+                <div class="detail-item">
+                  <span class="detail-label">KYC Status</span>
+                  <span class="detail-value kyc-badge" [class]="'kyc-' + selectedBooking()!.advertiser.kycStatus!.toLowerCase()">
+                    {{ selectedBooking()!.advertiser.kycStatus }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Booking Details Section -->
+          <div class="detail-section">
+            <h4 class="section-title">📅 Booking Details</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Start Date</span>
+                <span class="detail-value">{{ formatDate(selectedBooking()!.startDate) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">End Date</span>
+                <span class="detail-value">{{ formatDate(selectedBooking()!.endDate) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">{{ calculateDays(selectedBooking()!.startDate, selectedBooking()!.endDate) }} days</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Booking Date</span>
+                <span class="detail-value">{{ formatDate(selectedBooking()!.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PENDING: Price Summary & Approval Section -->
+          @if (selectedBooking()!.status === 'PENDING') {
+            <div class="detail-section" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 20px; border: 1px solid #f59e0b;">
+              <h4 class="section-title" style="color: #92400e; margin-bottom: 16px;">💰 Price Summary (Before Approval)</h4>
+
+              <!-- Price Breakdown -->
+              <div style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                @if (selectedBooking()!.originalBaseAmount && selectedBooking()!.discountPercent && (selectedBooking()!.discountPercent || 0) > 0) {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #6b7280;">
+                    <span>Original Amount</span>
+                    <span>{{ formatCurrency(selectedBooking()!.originalBaseAmount || 0) }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #16a34a; font-weight: 600;">
+                    <span>🏷️ Discount ({{ selectedBooking()!.discountPercent }}%)</span>
+                    <span>- {{ formatCurrency(selectedBooking()!.discountAmount || 0) }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Base Amount (After Discount)</span>
+                    <span>{{ formatCurrency(selectedBooking()!.baseAmount || 0) }}</span>
+                  </div>
+                } @else {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Base Amount</span>
+                    <span>{{ formatCurrency(selectedBooking()!.baseAmount || selectedBooking()!.totalPrice) }}</span>
+                  </div>
+                }
+                @if (selectedBooking()!.commissionAmount) {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #6b7280; font-size: 0.9em;">
+                    <span>Platform Fee</span>
+                    <span>+ {{ formatCurrency(selectedBooking()!.commissionAmount || 0) }}</span>
+                  </div>
+                }
+                @if (selectedBooking()!.gstAmount) {
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #6b7280; font-size: 0.9em;">
+                    <span>GST ({{ selectedBooking()!.gstPercentage || 18 }}%)</span>
+                    <span>+ {{ formatCurrency(selectedBooking()!.gstAmount || 0) }}</span>
+                  </div>
+                }
+                <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 2px solid #e5e7eb; font-weight: 700; font-size: 1.2em; color: #1f2937;">
+                  <span>Final Amount to Pay</span>
+                  <span>{{ formatCurrency(selectedBooking()!.totalPrice) }}</span>
+                </div>
+              </div>
+
+              <!-- Discount Button -->
+              <button
+                class="btn"
+                (click)="closeModal(); openDiscountModal(selectedBooking()!)"
+                [disabled]="processing()"
+                style="width: 100%; padding: 14px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; margin-bottom: 16px; cursor: pointer;"
+              >
+                @if (selectedBooking()!.discountPercent && (selectedBooking()!.discountPercent || 0) > 0) {
+                  🏷️ Modify Discount (Currently {{ selectedBooking()!.discountPercent }}% OFF)
+                } @else {
+                  🏷️ Apply Discount (Optional - Up to 50% OFF)
+                }
+              </button>
+
+              <!-- Approve/Reject Buttons -->
+              <div style="display: flex; gap: 12px;">
+                <button
+                  class="btn btn-success"
+                  (click)="approveBooking(selectedBooking()!.id); closeModal()"
+                  [disabled]="processing()"
+                  style="flex: 1; padding: 14px; font-weight: 600; font-size: 1rem; border-radius: 8px;"
+                >
+                  ✓ Approve &#64; {{ formatCurrency(selectedBooking()!.totalPrice) }}
+                </button>
+                <button
+                  class="btn btn-danger"
+                  (click)="rejectBooking(selectedBooking()!.id); closeModal()"
+                  [disabled]="processing()"
+                  style="flex: 1; padding: 14px; font-weight: 600; font-size: 1rem; border-radius: 8px;"
+                >
+                  ✕ Reject
+                </button>
+              </div>
+            </div>
+          } @else {
+            <!-- Non-pending: Just show total amount -->
+            <div class="detail-section">
+              <h4 class="section-title">💰 Payment Details</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Total Amount</span>
+                  <span class="detail-value price">{{ formatCurrency(selectedBooking()!.totalPrice) }}</span>
+                </div>
+                @if (selectedBooking()!.discountPercent && (selectedBooking()!.discountPercent || 0) > 0) {
+                  <div class="detail-item">
+                    <span class="detail-label">Discount Applied</span>
+                    <span class="detail-value" style="color: #16a34a;">{{ selectedBooking()!.discountPercent }}% OFF</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Actions for non-pending -->
+          <div class="modal-actions">
+            @if (selectedBooking()!.status === 'APPROVED' && selectedBooking()!.paymentStatus !== 'PAID') {
+              <button class="btn" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;" (click)="closeModal(); openDiscountModal(selectedBooking()!)">
+                🏷️ Manage Discount
+              </button>
+            }
+            <button class="btn btn-outline" (click)="closeModal()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Discount Modal -->
+  @if (showDiscountModal() && discountBooking()) {
+    <div class="modal-overlay" (click)="closeDiscountModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 500px;">
+        <button class="modal-close" (click)="closeDiscountModal()">✕</button>
+
+        <div class="modal-header" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 20px; border-radius: 12px 12px 0 0;">
+          <h2 style="margin: 0; font-size: 1.4rem;">🏷️ Apply Discount</h2>
+          <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 0.9rem;">
+            Booking #{{ discountBooking()!.id }} - {{ getBillboardTitle(discountBooking()!) }}
+          </p>
+        </div>
+
+        <div class="modal-body" style="padding: 24px;">
+          <!-- Error Message -->
+          @if (discountError()) {
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-bottom: 16px; color: #dc2626;">
+              {{ discountError() }}
+            </div>
+          }
+
+          <!-- Current Price Info -->
+          @if (discountLimits()) {
+            <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <h4 style="margin: 0 0 12px 0; color: #374151; font-size: 0.95rem;">Current Pricing</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <span style="color: #6b7280; font-size: 0.85rem;">Original Amount</span>
+                  <p style="margin: 4px 0 0 0; font-weight: 600; font-size: 1.1rem;">{{ formatCurrency(discountLimits()!.originalBaseAmount) }}</p>
+                </div>
+                <div>
+                  <span style="color: #6b7280; font-size: 0.85rem;">Current Total</span>
+                  <p style="margin: 4px 0 0 0; font-weight: 600; font-size: 1.1rem;">{{ formatCurrency(discountLimits()!.currentTotal) }}</p>
+                </div>
+              </div>
+              @if (discountLimits()!.currentDiscountPercent > 0) {
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e5e7eb;">
+                  <span style="color: #16a34a; font-weight: 600;">
+                    🏷️ {{ discountLimits()!.currentDiscountPercent }}% discount currently applied
+                    ({{ formatCurrency(discountLimits()!.currentDiscountAmount) }} off)
+                  </span>
+                </div>
+              }
+            </div>
+
+            <!-- Discount Slider -->
+            <div style="margin-bottom: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: 600; color: #374151;">Discount Percentage</label>
+                <span style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600;">
+                  {{ discountPercent() }}%
+                </span>
+              </div>
+              <input
+                type="range"
+                [min]="0"
+                [max]="discountLimits()!.maxDiscountPercent"
+                [value]="discountPercent()"
+                (input)="discountPercent.set(+($any($event.target).value))"
+                style="width: 100%; height: 8px; border-radius: 4px; cursor: pointer; accent-color: #8b5cf6;"
+              >
+              <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.8rem; color: #6b7280;">
+                <span>0%</span>
+                <span>Max: {{ discountLimits()!.maxDiscountPercent }}%</span>
+              </div>
+              @if (discountLimits()!.isWeekend) {
+                <p style="margin-top: 8px; font-size: 0.85rem; color: #d97706; background: #fef3c7; padding: 8px 12px; border-radius: 6px;">
+                  📅 Weekend booking: Maximum discount is {{ discountLimits()!.maxDiscountPercent }}%
+                </p>
+              }
+            </div>
+
+            <!-- Quick Select Buttons -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+              @for (percent of [0, 5, 10, 15, 20, 25, 30]; track percent) {
+                @if (percent <= discountLimits()!.maxDiscountPercent) {
+                  <button
+                    type="button"
+                    (click)="discountPercent.set(percent)"
+                    [class.active]="discountPercent() === percent"
+                    style="padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                    [style.background]="discountPercent() === percent ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : '#f3f4f6'"
+                    [style.color]="discountPercent() === percent ? 'white' : '#374151'"
+                    [style.border]="'none'"
+                  >
+                    {{ percent }}%
+                  </button>
+                }
+              }
+            </div>
+
+            <!-- Estimated New Total -->
+            <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-radius: 12px; padding: 16px; text-align: center;">
+              <span style="color: #166534; font-size: 0.9rem;">Estimated New Total</span>
+              <p style="margin: 8px 0 0 0; font-size: 1.5rem; font-weight: 700; color: #166534;">
+                {{ formatCurrency(calculateDiscountedTotal()) }}
+              </p>
+              @if (discountPercent() > 0) {
+                <span style="color: #16a34a; font-size: 0.85rem;">
+                  Customer saves {{ formatCurrency(discountLimits()!.originalBaseAmount * discountPercent() / 100) }}
+                </span>
+              }
+            </div>
+          } @else {
+            <div style="text-align: center; padding: 40px;">
+              <div class="spinner" style="margin: 0 auto;"></div>
+              <p style="margin-top: 12px; color: #6b7280;">Loading discount limits...</p>
+            </div>
+          }
+        </div>
+
+        <div class="modal-actions" style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn btn-outline" (click)="closeDiscountModal()" [disabled]="discountProcessing()">
+            Cancel
+          </button>
+          @if (discountBooking()!.discountPercent && discountBooking()!.discountPercent! > 0) {
+            <button
+              class="btn btn-danger"
+              (click)="removeDiscount(discountBooking()!); closeDiscountModal()"
+              [disabled]="discountProcessing()"
+            >
+              Remove Discount
+            </button>
+          }
+          <button
+            class="btn"
+            style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;"
+            (click)="applyDiscount()"
+            [disabled]="discountProcessing() || !discountLimits()"
+          >
+            @if (discountProcessing()) {
+              <span class="spinner" style="width: 16px; height: 16px;"></span> Applying...
+            } @else {
+              ✓ Apply {{ discountPercent() }}% Discount
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

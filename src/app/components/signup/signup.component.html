@@ -1,0 +1,249 @@
+<div class="auth-page">
+  <!-- Left Side - Branding -->
+  <div class="auth-branding">
+    <div class="branding-content">
+      <div class="logo">
+        <span class="logo-icon">🌟</span>
+        <span class="logo-text">BOABP</span>
+      </div>
+      <h1>Start Your Success Story Today!</h1>
+      <p>Be part of India's fastest-growing outdoor advertising network. Whether you own billboards or need visibility - we've got you covered!</p>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-number">500+</span>
+          <span class="stat-label">Happy Partners</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">2000+</span>
+          <span class="stat-label">Live Campaigns</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">50+</span>
+          <span class="stat-label">Cities & Growing</span>
+        </div>
+      </div>
+
+      <div class="testimonial">
+        <p class="quote">"Within just 3 months, my billboard revenue increased by 40%! BOABP is a game-changer for billboard owners."</p>
+        <div class="author">
+          <span class="author-name">Rahul Sharma</span>
+          <span class="author-role">Billboard Owner, Mumbai</span>
+        </div>
+      </div>
+    </div>
+    <div class="branding-footer">
+      <p>🚀 Join 500+ successful partners today</p>
+    </div>
+  </div>
+
+  <!-- Right Side - Registration Form -->
+  <div class="auth-form-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Join the Revolution! 🎉</h2>
+        <p>Your advertising success starts here</p>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert alert-error">
+          <span class="alert-icon">⚠️</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      @if (successMessage()) {
+        <div class="alert alert-success">
+          <span class="alert-icon">✅</span>
+          <span>{{ successMessage() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+        <!-- Role Selection Cards -->
+        <div class="role-selection">
+          <p class="role-title">✨ I'm joining as:</p>
+          <div class="role-cards">
+            <div
+              class="role-card"
+              [class.selected]="signupForm.get('role')?.value === 'OWNER'"
+              (click)="selectRole('OWNER')">
+              <div class="role-icon">🏢</div>
+              <div class="role-info">
+                <span class="role-name">Billboard Owner</span>
+                <span class="role-desc">Monetize your billboards</span>
+              </div>
+              <div class="role-check">
+                @if (signupForm.get('role')?.value === 'OWNER') {
+                  <span>✓</span>
+                }
+              </div>
+            </div>
+            <div
+              class="role-card"
+              [class.selected]="signupForm.get('role')?.value === 'ADVERTISER'"
+              (click)="selectRole('ADVERTISER')">
+              <div class="role-icon">📢</div>
+              <div class="role-info">
+                <span class="role-name">Advertiser</span>
+                <span class="role-desc">Get massive visibility</span>
+              </div>
+              <div class="role-check">
+                @if (signupForm.get('role')?.value === 'ADVERTISER') {
+                  <span>✓</span>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">
+              <span class="label-icon">👤</span>
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              formControlName="name"
+              placeholder="Enter your full name"
+              [class.input-error]="signupForm.get('name')?.invalid && signupForm.get('name')?.touched">
+            @if (signupForm.get('name')?.invalid && signupForm.get('name')?.touched) {
+              <div class="field-error">
+                @if (signupForm.get('name')?.errors?.['required']) {
+                  <span>Name is required</span>
+                }
+                @if (signupForm.get('name')?.errors?.['minlength']) {
+                  <span>Name must be at least 2 characters</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="phone">
+              <span class="label-icon">📱</span>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              formControlName="phone"
+              placeholder="10-digit phone number"
+              [class.input-error]="signupForm.get('phone')?.invalid && signupForm.get('phone')?.touched">
+            @if (signupForm.get('phone')?.invalid && signupForm.get('phone')?.touched) {
+              <div class="field-error">
+                @if (signupForm.get('phone')?.errors?.['required']) {
+                  <span>Phone number is required</span>
+                }
+                @if (signupForm.get('phone')?.errors?.['pattern']) {
+                  <span>Enter valid 10-digit number</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">
+            <span class="label-icon">📧</span>
+            Email Address
+          </label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            placeholder="Enter your email"
+            [class.input-error]="signupForm.get('email')?.invalid && signupForm.get('email')?.touched">
+          @if (signupForm.get('email')?.invalid && signupForm.get('email')?.touched) {
+            <div class="field-error">
+              @if (signupForm.get('email')?.errors?.['required']) {
+                <span>Email is required</span>
+              }
+              @if (signupForm.get('email')?.errors?.['email']) {
+                <span>Please enter a valid email</span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="password">
+              <span class="label-icon">🔒</span>
+              Password
+            </label>
+            <div class="password-wrapper">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                id="password"
+                formControlName="password"
+                placeholder="Min. 6 characters"
+                [class.input-error]="signupForm.get('password')?.invalid && signupForm.get('password')?.touched">
+              <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
+                {{ showPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            @if (signupForm.get('password')?.invalid && signupForm.get('password')?.touched) {
+              <div class="field-error">
+                @if (signupForm.get('password')?.errors?.['required']) {
+                  <span>Password is required</span>
+                }
+                @if (signupForm.get('password')?.errors?.['minlength']) {
+                  <span>Min. 6 characters</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">
+              <span class="label-icon">🔐</span>
+              Confirm Password
+            </label>
+            <div class="password-wrapper">
+              <input
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                id="confirmPassword"
+                formControlName="confirmPassword"
+                placeholder="Confirm password"
+                [class.input-error]="signupForm.get('confirmPassword')?.invalid && signupForm.get('confirmPassword')?.touched">
+              <button type="button" class="toggle-password" (click)="showConfirmPassword = !showConfirmPassword">
+                {{ showConfirmPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            @if (signupForm.get('confirmPassword')?.invalid && signupForm.get('confirmPassword')?.touched) {
+              <div class="field-error">
+                <span>Please confirm password</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" [disabled]="signupForm.invalid || isLoading()">
+          @if (isLoading()) {
+            <span class="spinner"></span>
+            <span>Setting things up...</span>
+          } @else {
+            <span>Launch My Journey</span>
+            <span class="btn-arrow">🚀</span>
+          }
+        </button>
+      </form>
+
+      <div class="auth-divider">
+        <span>Already a member?</span>
+      </div>
+
+      <a routerLink="/signin" class="btn-secondary">
+        🔐 Sign In to Dashboard
+      </a>
+
+      <p class="terms-text">
+        By creating an account, you agree to our
+        <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+      </p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,448 @@
+<!-- Toast Notification -->
+@if (passwordMessage()) {
+  <div class="toast-notification toast-success">
+    <span class="toast-icon">✓</span>
+    <span class="toast-message">{{ passwordMessage() }}</span>
+  </div>
+}
+
+<div class="settings-page">
+  <div class="page-header">
+    <h1>Settings</h1>
+    <p>Manage your account and platform settings</p>
+  </div>
+
+  <div class="settings-container">
+    <!-- Tabs -->
+    <div class="settings-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">
+        <span>👤</span> Profile
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'platform'" (click)="setActiveTab('platform')">
+        <span>⚙️</span> Platform
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">
+        <span>🔔</span> Notifications
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'security'" (click)="setActiveTab('security')">
+        <span>🔒</span> Security
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="settings-content">
+      <!-- Profile Tab -->
+      @if (activeTab === 'profile') {
+        <div class="settings-section">
+          <h2>Profile Information</h2>
+          <p class="section-desc">Update your personal information.</p>
+
+          <!-- Alerts -->
+          @if (profileMessage()) {
+            <div class="alert alert-success">
+              <span class="alert-icon">✅</span>
+              <span>{{ profileMessage() }}</span>
+            </div>
+          }
+
+          @if (profileError()) {
+            <div class="alert alert-error">
+              <span class="alert-icon">⚠️</span>
+              <span>{{ profileError() }}</span>
+            </div>
+          }
+
+          <div class="profile-header">
+            <div class="avatar-section">
+              <div class="admin-avatar-wrapper">
+                <div class="admin-avatar">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="admin-icon">
+                    <path fill-rule="evenodd" d="M11.484 2.17a.75.75 0 011.032 0 11.209 11.209 0 007.877 3.08.75.75 0 01.722.515 12.74 12.74 0 01.635 3.985c0 5.942-4.064 10.933-9.563 12.348a.749.749 0 01-.374 0C6.314 20.683 2.25 15.692 2.25 9.75c0-1.39.223-2.73.635-3.985a.75.75 0 01.722-.516 11.209 11.209 0 007.877-3.08zm.238 7.58a.75.75 0 01.97-.024l.032.027 1.5 1.5a.75.75 0 01-.976 1.133l-.084-.073-.72-.72v2.657a.75.75 0 01-1.5 0v-2.657l-.72.72a.75.75 0 01-1.133-.976l.073-.084 1.5-1.5.058-.053z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="admin-badge">Admin</div>
+              </div>
+              <div class="admin-info">
+                <span class="admin-title">System Administrator</span>
+                <span class="admin-subtitle">Secured Account</span>
+              </div>
+            </div>
+          </div>
+
+          <form class="settings-form" (ngSubmit)="saveProfile()">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text"
+                       [(ngModel)]="profile.name"
+                       name="name"
+                       placeholder="Enter your name"
+                       [disabled]="isSavingProfile()">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email"
+                       [(ngModel)]="profile.email"
+                       name="email"
+                       placeholder="Enter your email"
+                       [disabled]="isSavingProfile()">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Role</label>
+              <input type="text" [value]="profile.role" disabled>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="isSavingProfile()">
+                @if (isSavingProfile()) {
+                  <span class="spinner-small"></span> Saving...
+                } @else {
+                  Save Changes
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- Platform Tab -->
+      @if (activeTab === 'platform') {
+        <div class="settings-section">
+          <h2>Platform Settings</h2>
+          <p class="section-desc">Configure platform-wide settings and preferences.</p>
+
+          <!-- Alerts -->
+          @if (platformSettingsMessage()) {
+            <div class="alert alert-success">
+              <span class="alert-icon">✅</span>
+              <span>{{ platformSettingsMessage() }}</span>
+            </div>
+          }
+
+          @if (platformSettingsError()) {
+            <div class="alert alert-error">
+              <span class="alert-icon">⚠️</span>
+              <span>{{ platformSettingsError() }}</span>
+            </div>
+          }
+
+          @if (isLoadingPlatformSettings()) {
+            <div class="loading-state">
+              <span class="spinner"></span>
+              <span>Loading platform settings...</span>
+            </div>
+          } @else {
+            <form class="settings-form" (ngSubmit)="savePlatformSettings()">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Platform Name</label>
+                  <input type="text"
+                         [ngModel]="platformSettings().platformName"
+                         (ngModelChange)="updatePlatformSetting('platformName', $event)"
+                         name="platformName"
+                         [disabled]="isSavingPlatformSettings()">
+                </div>
+                <div class="form-group">
+                  <label>Support Email</label>
+                  <input type="email"
+                         [ngModel]="platformSettings().supportEmail"
+                         (ngModelChange)="updatePlatformSetting('supportEmail', $event)"
+                         name="supportEmail"
+                         [disabled]="isSavingPlatformSettings()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Commission (%)</label>
+                  <input type="number"
+                         [ngModel]="platformSettings().commissionPercent"
+                         (ngModelChange)="updatePlatformSetting('commissionPercent', $event)"
+                         name="commissionPercent"
+                         min="0"
+                         max="100"
+                         step="0.01"
+                         placeholder="Enter commission percentage"
+                         [disabled]="isSavingPlatformSettings()">
+                </div>
+                <div class="form-group">
+                  <label>GST (%)</label>
+                  <input type="number"
+                         [ngModel]="platformSettings().gstPercent"
+                         (ngModelChange)="updatePlatformSetting('gstPercent', $event)"
+                         name="gstPercent"
+                         min="0"
+                         max="100"
+                         step="0.01"
+                         placeholder="Enter GST percentage"
+                         [disabled]="isSavingPlatformSettings()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Currency</label>
+                  <select [ngModel]="platformSettings().currency"
+                          (ngModelChange)="updatePlatformSetting('currency', $event)"
+                          name="currency"
+                          [disabled]="isSavingPlatformSettings()">
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <!-- Empty for layout balance or add more fields later -->
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Timezone</label>
+                <select [ngModel]="platformSettings().timezone"
+                        (ngModelChange)="updatePlatformSetting('timezone', $event)"
+                        name="timezone"
+                        [disabled]="isSavingPlatformSettings()">
+                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">America/New_York (EST)</option>
+                  <option value="Europe/London">Europe/London (GMT)</option>
+                </select>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" [disabled]="isSavingPlatformSettings()">
+                  @if (isSavingPlatformSettings()) {
+                    <span class="spinner-small"></span> Saving...
+                  } @else {
+                    Save Changes
+                  }
+                </button>
+              </div>
+            </form>
+          }
+        </div>
+      }
+
+      <!-- Notifications Tab -->
+      @if (activeTab === 'notifications') {
+        <div class="settings-section">
+          <h2>Notification Preferences</h2>
+          <p class="section-desc">Choose how you want to receive notifications.</p>
+
+          <div class="notification-group">
+            <h3>General Notifications</h3>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Email Notifications</span>
+                <span class="toggle-desc">Receive updates via email</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="notifications().email" (change)="updateNotification('email', !notifications().email)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Push Notifications</span>
+                <span class="toggle-desc">Browser push notifications</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="notifications().push" (change)="updateNotification('push', !notifications().push)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="notification-group">
+            <h3>Activity Alerts</h3>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">New Bookings</span>
+                <span class="toggle-desc">Alert for new booking requests</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="notifications().newBookings" (change)="updateNotification('newBookings', !notifications().newBookings)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Owner Approvals</span>
+                <span class="toggle-desc">New owner registration alerts</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="notifications().ownerApprovals" (change)="updateNotification('ownerApprovals', !notifications().ownerApprovals)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Payment Alerts</span>
+                <span class="toggle-desc">Payment confirmations and issues</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [checked]="notifications().payments" (change)="updateNotification('payments', !notifications().payments)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" (click)="saveNotifications()">Save Preferences</button>
+          </div>
+        </div>
+      }
+
+      <!-- Security Tab -->
+      @if (activeTab === 'security') {
+        <div class="settings-section">
+          <h2>Security Settings</h2>
+          <p class="section-desc">Manage platform security and your account.</p>
+
+          <!-- Alerts -->
+          @if (securityMessage()) {
+            <div class="alert alert-success">
+              <span class="alert-icon">✅</span>
+              <span>{{ securityMessage() }}</span>
+            </div>
+          }
+
+          @if (securityError()) {
+            <div class="alert alert-error">
+              <span class="alert-icon">⚠️</span>
+              <span>{{ securityError() }}</span>
+            </div>
+          }
+
+          <!-- Platform Security: Force 2FA -->
+          <div class="security-section admin-security">
+            <h3>Platform Security (Admin Only)</h3>
+
+            <div class="security-item force-2fa-item">
+              <div class="security-info">
+                <div class="security-header">
+                  <h4>Force Two-Factor Authentication</h4>
+                  @if (force2FAEnabled()) {
+                    <span class="status-badge active">Active</span>
+                  } @else {
+                    <span class="status-badge inactive">Inactive</span>
+                  }
+                </div>
+                <p>When enabled, all users (Owners and Advertisers) must use 2FA and cannot disable it.</p>
+              </div>
+              <div class="security-actions">
+                @if (force2FAEnabled()) {
+                  <button
+                    class="btn btn-warning"
+                    (click)="disableForced2FA()"
+                    [disabled]="isForcing2FA()">
+                    @if (isForcing2FA()) {
+                      <span class="spinner-small"></span> Disabling...
+                    } @else {
+                      Disable Forced 2FA
+                    }
+                  </button>
+                } @else {
+                  <button
+                    class="btn btn-primary"
+                    (click)="force2FAForAllUsers()"
+                    [disabled]="isForcing2FA()">
+                    @if (isForcing2FA()) {
+                      <span class="spinner-small"></span> Enforcing...
+                    } @else {
+                      Enforce 2FA for All Users
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="admin-note">
+              <span class="note-icon">📝</span>
+              <p><strong>Note:</strong> As an administrator, you cannot change your own 2FA settings from this panel.
+              Admin accounts have fixed security policies managed at the system level.</p>
+            </div>
+          </div>
+
+          <!-- Password Section -->
+          <div class="security-item">
+            <div class="security-info">
+              <h3>Password</h3>
+              <p>Change your account password</p>
+            </div>
+            <button class="btn btn-outline" (click)="openPasswordModal()">Change Password</button>
+          </div>
+
+          <!-- Login History -->
+          <div class="login-history-section">
+            <h3>Login History</h3>
+            <p class="section-desc">View your recent login activity</p>
+            <app-login-history></app-login-history>
+          </div>
+
+          <div class="danger-zone">
+            <h3>Danger Zone</h3>
+            <p>Irreversible actions for your account</p>
+            <button class="btn btn-danger">Delete Account</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+@if (showPasswordModal()) {
+  <div class="modal-overlay" (click)="closePasswordModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Change Password</h3>
+        <button class="modal-close" (click)="closePasswordModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        @if (passwordError()) {
+          <div class="alert alert-error">
+            {{ passwordError() }}
+          </div>
+        }
+
+        <div class="form-group">
+          <label>Current Password</label>
+          <input
+            type="password"
+            [(ngModel)]="oldPassword"
+            name="oldPassword"
+            placeholder="Enter current password"
+            [disabled]="isChangingPassword()">
+        </div>
+
+        <div class="form-group">
+          <label>New Password</label>
+          <input
+            type="password"
+            [(ngModel)]="newPassword"
+            name="newPassword"
+            placeholder="Enter new password"
+            [disabled]="isChangingPassword()">
+          <small class="form-hint">Must be at least 8 characters</small>
+        </div>
+
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input
+            type="password"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            placeholder="Confirm new password"
+            [disabled]="isChangingPassword()">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closePasswordModal()" [disabled]="isChangingPassword()">Cancel</button>
+        <button class="btn btn-primary" (click)="changePassword()" [disabled]="isChangingPassword() || !oldPassword || !newPassword || !confirmPassword">
+          @if (isChangingPassword()) {
+            <span class="btn-spinner"></span> Changing...
+          } @else {
+            Change Password
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

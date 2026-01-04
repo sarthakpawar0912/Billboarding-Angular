@@ -1,0 +1,485 @@
+<div class="settings-page">
+  <div class="page-header">
+    <h1>Settings</h1>
+    <p>Manage your account settings and preferences.</p>
+  </div>
+
+  <div class="settings-container">
+    <!-- Tabs -->
+    <div class="settings-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">
+        <span>👤</span> Profile
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'bank'" (click)="setActiveTab('bank')">
+        <span>🏦</span> Bank Details
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'notifications'" (click)="setActiveTab('notifications')">
+        <span>🔔</span> Notifications
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'security'" (click)="setActiveTab('security')">
+        <span>🔒</span> Security
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="settings-content">
+      <!-- Profile Tab -->
+      @if (activeTab === 'profile') {
+        <div class="settings-section">
+          <h2>Profile Information</h2>
+          <p class="section-desc">Update your personal and business information.</p>
+
+          <!-- Error Message -->
+          @if (imageError) {
+            <div class="alert alert-error">
+              {{ imageError }}
+            </div>
+          }
+
+          <!-- Success Message -->
+          @if (imageSuccess) {
+            <div class="alert alert-success">
+              {{ imageSuccess }}
+            </div>
+          }
+
+          <div class="profile-header">
+            <div class="avatar-section">
+              <div class="avatar-wrapper">
+                @if (profileImageUrl) {
+                  <img [src]="profileImageUrl" alt="Profile" class="avatar">
+                } @else {
+                  <div class="avatar-fallback">{{ (currentUser()?.name || 'O').charAt(0).toUpperCase() }}</div>
+                }
+                @if (isUploadingImage) {
+                  <div class="avatar-loading">
+                    <div class="spinner-small"></div>
+                  </div>
+                }
+              </div>
+              <input
+                type="file"
+                id="profileImageInput"
+                accept="image/*"
+                (change)="onImageSelected($event)"
+                style="display: none;">
+              <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                (click)="triggerImageUpload()"
+                [disabled]="isUploadingImage">
+                @if (isUploadingImage) {
+                  Uploading...
+                } @else {
+                  Change Photo
+                }
+              </button>
+            </div>
+          </div>
+
+          <form class="settings-form" (ngSubmit)="saveProfile()">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" [(ngModel)]="profile.name" name="name">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" [(ngModel)]="profile.email" name="email">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" [(ngModel)]="profile.phone" name="phone">
+              </div>
+              <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" [(ngModel)]="profile.company" name="company">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>GST Number</label>
+                <input type="text" [(ngModel)]="profile.gst" name="gst">
+              </div>
+              <div class="form-group">
+                <label>Business Address</label>
+                <input type="text" [(ngModel)]="profile.address" name="address">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- Bank Details Tab -->
+      @if (activeTab === 'bank') {
+        <div class="settings-section">
+          <h2>Bank Account Details</h2>
+          <p class="section-desc">Manage your bank account for receiving payouts. You must add bank details to withdraw funds.</p>
+
+          <!-- Loading State -->
+          @if (isBankLoading()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading bank details...</p>
+            </div>
+          }
+
+          <!-- Success Message -->
+          @if (bankSuccess()) {
+            <div class="alert alert-success">
+              {{ bankSuccess() }}
+            </div>
+          }
+
+          <!-- Error Message -->
+          @if (bankError()) {
+            <div class="alert alert-error">
+              {{ bankError() }}
+            </div>
+          }
+
+          <!-- Existing Bank Account Display -->
+          @if (bankAccount() && !isBankLoading()) {
+            <div class="bank-card-display">
+              <div class="bank-card-header">
+                <div class="bank-icon-large">🏦</div>
+                <div class="bank-main-info">
+                  <h3>{{ bankAccount()!.bankName }}</h3>
+                  <p class="account-holder">{{ bankAccount()!.accountHolderName }}</p>
+                </div>
+                <div class="verification-badge" [style.background-color]="getVerificationStatusColor(bankAccount()!.verificationStatus)">
+                  <span>{{ getVerificationStatusIcon(bankAccount()!.verificationStatus) }}</span>
+                  {{ bankAccount()!.verificationStatus }}
+                </div>
+              </div>
+
+              <div class="bank-card-details">
+                <div class="detail-item">
+                  <span class="detail-label">Account Number</span>
+                  <span class="detail-value masked">{{ bankAccount()!.maskedAccountNumber }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">IFSC Code</span>
+                  <span class="detail-value">{{ bankAccount()!.ifscCode }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Account Type</span>
+                  <span class="detail-value">{{ bankAccount()!.accountType }}</span>
+                </div>
+                @if (bankAccount()!.branchName) {
+                  <div class="detail-item">
+                    <span class="detail-label">Branch</span>
+                    <span class="detail-value">{{ bankAccount()!.branchName }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="bank-card-footer">
+                @if (bankAccount()!.readyForPayout) {
+                  <span class="payout-ready">
+                    <span>✓</span> Ready for payouts
+                  </span>
+                } @else {
+                  <span class="payout-not-ready">
+                    <span>⚠</span> Verification pending
+                  </span>
+                }
+                <div class="bank-card-actions">
+                  <button class="btn btn-outline btn-sm" (click)="editBankAccount()" [disabled]="isBankSaving()">
+                    Edit
+                  </button>
+                  <button class="btn btn-danger-outline btn-sm" (click)="deleteBankAccount()" [disabled]="isBankSaving()">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Add/Edit Bank Account Form -->
+          @if (!bankAccount() && !isBankLoading()) {
+            <div class="bank-form-container">
+              <div class="form-notice">
+                <span>💡</span>
+                <span>Enter your bank details to receive payouts. Make sure the account holder name matches your registered name.</span>
+              </div>
+
+              <form class="settings-form" (ngSubmit)="saveBankDetails()">
+                <div class="form-group">
+                  <label>Account Holder Name <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    [(ngModel)]="bankForm.accountHolderName"
+                    name="accountHolderName"
+                    placeholder="Enter name as per bank account"
+                    [disabled]="isBankSaving()">
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Account Number <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      [(ngModel)]="bankForm.accountNumber"
+                      name="accountNumber"
+                      placeholder="Enter account number"
+                      maxlength="18"
+                      [disabled]="isBankSaving()">
+                  </div>
+                  <div class="form-group">
+                    <label>Confirm Account Number <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      [(ngModel)]="bankForm.confirmAccountNumber"
+                      name="confirmAccountNumber"
+                      placeholder="Re-enter account number"
+                      maxlength="18"
+                      [disabled]="isBankSaving()">
+                    @if (bankForm.accountNumber && bankForm.confirmAccountNumber && bankForm.accountNumber !== bankForm.confirmAccountNumber) {
+                      <small class="error-text">Account numbers do not match</small>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>IFSC Code <span class="required">*</span></label>
+                    <div class="input-with-btn">
+                      <input
+                        type="text"
+                        [(ngModel)]="bankForm.ifscCode"
+                        name="ifscCode"
+                        placeholder="e.g., HDFC0001234"
+                        maxlength="11"
+                        (input)="onIFSCInput()"
+                        style="text-transform: uppercase"
+                        [disabled]="isBankSaving()">
+                      @if (isLookingUpIFSC) {
+                        <span class="input-spinner"></span>
+                      }
+                      @if (bankForm.bankName && bankForm.ifscCode.length >= 4) {
+                        <span class="ifsc-valid">✓</span>
+                      }
+                    </div>
+                    <small class="form-hint">Bank name auto-detects as you type</small>
+                  </div>
+                  <div class="form-group">
+                    <label>Bank Name <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      [(ngModel)]="bankForm.bankName"
+                      name="bankName"
+                      placeholder="Bank name (auto-filled from IFSC)"
+                      [disabled]="isBankSaving()">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Branch Name</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="bankForm.branchName"
+                      name="branchName"
+                      placeholder="Branch name (optional)"
+                      [disabled]="isBankSaving()">
+                  </div>
+                  <div class="form-group">
+                    <label>Account Type</label>
+                    <select [(ngModel)]="bankForm.accountType" name="accountType" [disabled]="isBankSaving()">
+                      <option value="SAVINGS">Savings Account</option>
+                      <option value="CURRENT">Current Account</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary" [disabled]="isBankSaving()">
+                    @if (isBankSaving()) {
+                      <span class="btn-spinner"></span> Saving...
+                    } @else {
+                      Save Bank Account
+                    }
+                  </button>
+                </div>
+              </form>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Notifications Tab -->
+      @if (activeTab === 'notifications') {
+        <div class="settings-section">
+          <h2>Notification Preferences</h2>
+          <p class="section-desc">Choose how you want to receive notifications.</p>
+
+          <div class="notification-group">
+            <h3>Email Notifications</h3>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Booking Requests</span>
+                <span class="toggle-desc">Get notified when you receive a booking request</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="notifications.emailBookings">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Payment Updates</span>
+                <span class="toggle-desc">Get notified about payment receipts and withdrawals</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="notifications.emailPayments">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Marketing & Promotions</span>
+                <span class="toggle-desc">Receive tips and promotional offers</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="notifications.emailMarketing">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="notification-group">
+            <h3>SMS Notifications</h3>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Booking Alerts</span>
+                <span class="toggle-desc">Get SMS for new booking requests</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="notifications.smsBookings">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Payment Alerts</span>
+                <span class="toggle-desc">Get SMS for payment confirmations</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="notifications.smsPayments">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" (click)="saveNotifications()">Save Preferences</button>
+          </div>
+        </div>
+      }
+
+      <!-- Security Tab -->
+      @if (activeTab === 'security') {
+        <div class="settings-section">
+          <h2>Security Settings</h2>
+          <p class="section-desc">Manage your account security.</p>
+
+          <!-- Success Message -->
+          @if (securitySuccess) {
+            <div class="alert alert-success">
+              {{ securitySuccess }}
+            </div>
+          }
+
+          <div class="security-item">
+            <div class="security-info">
+              <h3>Password</h3>
+              <p>Change your account password</p>
+            </div>
+            <button class="btn btn-outline" (click)="openChangePasswordModal()">Change Password</button>
+          </div>
+
+          <!-- Two-Factor Authentication -->
+          <div class="twofa-section">
+            <app-twofa-settings></app-twofa-settings>
+          </div>
+
+          <!-- Login History -->
+          <div class="login-history-section">
+            <h3>Login History</h3>
+            <p class="section-desc">View your recent login activity</p>
+            <app-login-history></app-login-history>
+          </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        @if (showChangePasswordModal) {
+          <div class="modal-overlay" (click)="closeChangePasswordModal()">
+            <div class="modal-content" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h3>Change Password</h3>
+                <button class="modal-close" (click)="closeChangePasswordModal()">&times;</button>
+              </div>
+              <div class="modal-body">
+                @if (securityError) {
+                  <div class="alert alert-error">
+                    {{ securityError }}
+                  </div>
+                }
+
+                <div class="form-group">
+                  <label>Current Password</label>
+                  <input
+                    type="password"
+                    [(ngModel)]="oldPassword"
+                    name="oldPassword"
+                    placeholder="Enter current password"
+                    [disabled]="isChangingPassword"
+                    required>
+                </div>
+
+                <div class="form-group">
+                  <label>New Password</label>
+                  <input
+                    type="password"
+                    [(ngModel)]="newPassword"
+                    name="newPassword"
+                    placeholder="Enter new password"
+                    [disabled]="isChangingPassword"
+                    required>
+                  <small class="form-hint">Must be at least 6 characters</small>
+                </div>
+
+                <div class="form-group">
+                  <label>Confirm New Password</label>
+                  <input
+                    type="password"
+                    [(ngModel)]="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Confirm new password"
+                    [disabled]="isChangingPassword"
+                    required>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-outline" (click)="closeChangePasswordModal()" [disabled]="isChangingPassword">Cancel</button>
+                <button class="btn btn-primary" (click)="changePassword()" [disabled]="isChangingPassword || !oldPassword || !newPassword || !confirmPassword">
+                  @if (isChangingPassword) {
+                    <span class="btn-spinner"></span> Changing...
+                  } @else {
+                    Change Password
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</div>

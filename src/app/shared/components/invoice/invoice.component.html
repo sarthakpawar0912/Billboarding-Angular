@@ -1,0 +1,166 @@
+<div class="invoice-container" id="invoice-content">
+  <!-- Print/Download Actions -->
+  @if (showActions && !isPrinting()) {
+    <div class="invoice-actions no-print">
+      <button class="btn-print" (click)="printInvoice()">
+        <span class="icon">🖨️</span> Print Invoice
+      </button>
+    </div>
+  }
+
+  <!-- Invoice Content -->
+  <div class="invoice-paper">
+    <!-- Header -->
+    <div class="invoice-header">
+      <h1 class="invoice-title">TAX INVOICE</h1>
+    </div>
+
+    <!-- Invoice Meta Row -->
+    <div class="invoice-meta">
+      <div class="meta-left">
+        <span class="meta-label">Invoice No:</span>
+        <span class="meta-value">{{ invoiceData.invoiceNo }}</span>
+      </div>
+      <div class="meta-right">
+        <span class="meta-label">Date:</span>
+        <span class="meta-value">{{ formatDate(invoiceData.invoiceDate) }}</span>
+      </div>
+    </div>
+
+    <!-- Party Details Table (Seller & Buyer side by side) -->
+    <table class="party-table">
+      <tbody>
+        <tr>
+          <td class="party-cell seller-cell">
+            <div class="party-header">SELLER DETAILS</div>
+            <div class="party-content">
+              <p class="party-name">{{ invoiceData.sellerName }}</p>
+              <p>GSTIN: {{ invoiceData.sellerGstin }}</p>
+              <p>{{ invoiceData.sellerAddress }}</p>
+            </div>
+          </td>
+          <td class="party-cell buyer-cell">
+            <div class="party-header">BUYER DETAILS</div>
+            <div class="party-content">
+              <p class="party-name">{{ invoiceData.buyerName }}</p>
+              <p>{{ invoiceData.buyerEmail }}</p>
+              @if (invoiceData.buyerPhone) {
+                <p>{{ invoiceData.buyerPhone }}</p>
+              }
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Service Details Table -->
+    <div class="section-spacing"></div>
+    <table class="service-table">
+      <thead>
+        <tr>
+          <th class="col-billboard">Billboard</th>
+          <th class="col-date">From</th>
+          <th class="col-date">To</th>
+          <th class="col-days">Days</th>
+          <th class="col-rate">Rate</th>
+          <th class="col-amount">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ invoiceData.billboardName }}</td>
+          <td>{{ formatDate(invoiceData.fromDate) }}</td>
+          <td>{{ formatDate(invoiceData.toDate) }}</td>
+          <td class="text-center">{{ invoiceData.days }}</td>
+          <td class="text-right">{{ formatCurrency(invoiceData.ratePerDay) }}</td>
+          <td class="text-right">{{ formatCurrency(invoiceData.amount) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Amount Breakdown Table -->
+    <div class="section-spacing"></div>
+    <table class="tax-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="col-tax-amount">Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Show Original Amount if discount was applied -->
+        @if (invoiceData.discountAmount && invoiceData.discountAmount > 0) {
+          <tr>
+            <td>Billboard Rental (Original)</td>
+            <td class="text-right">{{ formatCurrency(invoiceData.originalAmount || invoiceData.amount) }}</td>
+          </tr>
+          <tr class="discount-row">
+            <td style="color: #16a34a;">Discount @if (invoiceData.discountPercent) { ({{ invoiceData.discountPercent }}%) }</td>
+            <td class="text-right" style="color: #16a34a;">- {{ formatCurrency(invoiceData.discountAmount) }}</td>
+          </tr>
+          <tr>
+            <td><strong>Billboard Rental (After Discount)</strong></td>
+            <td class="text-right"><strong>{{ formatCurrency(invoiceData.amount) }}</strong></td>
+          </tr>
+        } @else {
+          <tr>
+            <td>Billboard Rental</td>
+            <td class="text-right">{{ formatCurrency(invoiceData.amount) }}</td>
+          </tr>
+        }
+        @if (invoiceData.commissionAmount && invoiceData.commissionAmount > 0) {
+          <tr>
+            <td>Platform Service Fee @if (invoiceData.commissionPercent) { ({{ invoiceData.commissionPercent }}%) }</td>
+            <td class="text-right">{{ formatCurrency(invoiceData.commissionAmount) }}</td>
+          </tr>
+        }
+        <tr class="subtotal-row">
+          <td><strong>Taxable Value</strong></td>
+          <td class="text-right"><strong>{{ formatCurrency(invoiceData.subtotal) }}</strong></td>
+        </tr>
+        <tr>
+          <td>CGST &#64; {{ invoiceData.cgstRate }}%</td>
+          <td class="text-right">{{ formatCurrency(invoiceData.cgstAmount) }}</td>
+        </tr>
+        <tr>
+          <td>SGST &#64; {{ invoiceData.sgstRate }}%</td>
+          <td class="text-right">{{ formatCurrency(invoiceData.sgstAmount) }}</td>
+        </tr>
+        @if (invoiceData.igstAmount && invoiceData.igstAmount > 0) {
+          <tr>
+            <td>IGST &#64; {{ invoiceData.igstRate || 18 }}%</td>
+            <td class="text-right">{{ formatCurrency(invoiceData.igstAmount) }}</td>
+          </tr>
+        }
+        @if (invoiceData.totalGst) {
+          <tr>
+            <td><strong>Total GST</strong></td>
+            <td class="text-right"><strong>{{ formatCurrency(invoiceData.totalGst) }}</strong></td>
+          </tr>
+        }
+        <tr class="total-row">
+          <td><strong>GRAND TOTAL</strong></td>
+          <td class="text-right"><strong>{{ formatCurrency(invoiceData.totalAmount) }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Payment Details -->
+    @if (invoiceData.paymentId || invoiceData.orderId) {
+      <div class="section-spacing"></div>
+      <div class="payment-details">
+        @if (invoiceData.paymentId) {
+          <p><span class="label">Payment ID:</span> {{ invoiceData.paymentId }}</p>
+        }
+        @if (invoiceData.orderId) {
+          <p><span class="label">Order ID:</span> {{ invoiceData.orderId }}</p>
+        }
+      </div>
+    }
+
+    <!-- Footer -->
+    <div class="invoice-footer">
+      <p class="footer-note">This is a system generated GST invoice.</p>
+    </div>
+  </div>
+</div>

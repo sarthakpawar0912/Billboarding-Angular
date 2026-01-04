@@ -1,0 +1,296 @@
+<div class="favorites-page">
+  <!-- Success Message -->
+  @if (successMessage()) {
+    <div class="toast-success">
+      <span class="toast-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-heart">
+        <span class="heart-icon">❤️</span>
+      </div>
+      <p>Loading your favorites...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-alert">
+      <span>⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn btn-sm" (click)="loadFavorites()">Retry</button>
+    </div>
+  }
+
+  @if (!loading()) {
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">❤️</div>
+        <div class="header-text">
+          <h1>My Favorites</h1>
+          <p>Your curated collection of billboard gems</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-bubble">
+          <span class="stat-number">{{ favorites().length }}</span>
+          <span class="stat-label">Saved</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    @if (favorites().length > 0) {
+      <div class="controls-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text"
+                 placeholder="Search your favorites..."
+                 [value]="searchTerm()"
+                 (input)="onSearch($event)">
+        </div>
+        <div class="controls-right">
+          <select class="sort-select" (change)="onSort($event)" [value]="sortBy()">
+            <option value="newest">Recently Added</option>
+            <option value="name">Name A-Z</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+          </select>
+          <div class="view-toggle">
+            <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="toggleView('grid')">
+              <span>▦</span>
+            </button>
+            <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="toggleView('list')">
+              <span>☰</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (favorites().length === 0) {
+      <div class="empty-state">
+        <div class="empty-heart">
+          <span class="heart-outline">♡</span>
+        </div>
+        <h2>No favorites yet</h2>
+        <p>Start exploring billboards and save your favorites for quick access</p>
+        <a routerLink="/advertiser/browse" class="btn btn-primary">
+          <span>🔍</span> Browse Billboards
+        </a>
+      </div>
+    }
+
+    <!-- Grid View -->
+    @if (filteredFavorites().length > 0 && viewMode() === 'grid') {
+      <div class="favorites-grid">
+        @for (fav of filteredFavorites(); track fav.id) {
+          <div class="favorite-card" [class.removing]="removingId() === fav.billboard.id">
+            <div class="card-image">
+              @if (fav.billboard.imagePaths && fav.billboard.imagePaths.length > 0) {
+                <img [src]="getImageUrl(fav.billboard.imagePaths[0])" [alt]="fav.billboard.title">
+              } @else {
+                <div class="image-placeholder">
+                  <span>🏗️</span>
+                </div>
+              }
+              <div class="card-badges">
+                <span class="type-badge">
+                  {{ getBillboardTypeInfo(fav.billboard.type).icon }}
+                  {{ getBillboardTypeInfo(fav.billboard.type).label }}
+                </span>
+                @if (fav.billboard.available) {
+                  <span class="available-badge">Available</span>
+                }
+              </div>
+              <button class="remove-btn"
+                      (click)="removeFromFavorites(fav.billboard.id, $event)"
+                      [disabled]="removingId() === fav.billboard.id">
+                @if (removingId() === fav.billboard.id) {
+                  <span class="btn-spinner"></span>
+                } @else {
+                  <span>❤️</span>
+                }
+              </button>
+              <div class="added-date">
+                Added {{ getTimeAgo(fav.createdAt) }}
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="card-header">
+                <h3>{{ fav.billboard.title || 'Untitled Billboard' }}</h3>
+                <div class="price-tag">
+                  {{ formatCurrency(fav.billboard.pricePerDay) }}
+                  <span class="period">/day</span>
+                </div>
+              </div>
+              <div class="card-details">
+                <p class="location">📍 {{ fav.billboard.location || 'Location not specified' }}</p>
+                <p class="size">📐 {{ fav.billboard.size || 'Size N/A' }}</p>
+              </div>
+              <div class="owner-info">
+                <div class="owner-avatar">{{ fav.billboard.owner.name.charAt(0) }}</div>
+                <span class="owner-name">{{ fav.billboard.owner.name }}</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-primary" (click)="openBookingModal(fav.billboard)">
+                  📅 Book Now
+                </button>
+                <button class="btn btn-outline-danger" (click)="removeFromFavorites(fav.billboard.id)">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- List View -->
+    @if (filteredFavorites().length > 0 && viewMode() === 'list') {
+      <div class="favorites-list">
+        @for (fav of filteredFavorites(); track fav.id) {
+          <div class="list-item" [class.removing]="removingId() === fav.billboard.id">
+            <div class="list-image">
+              @if (fav.billboard.imagePaths && fav.billboard.imagePaths.length > 0) {
+                <img [src]="getImageUrl(fav.billboard.imagePaths[0])" [alt]="fav.billboard.title">
+              } @else {
+                <div class="image-placeholder">
+                  <span>🏗️</span>
+                </div>
+              }
+            </div>
+            <div class="list-content">
+              <div class="list-header">
+                <div class="list-title-row">
+                  <h3>{{ fav.billboard.title || 'Untitled Billboard' }}</h3>
+                  <span class="type-badge small">
+                    {{ getBillboardTypeInfo(fav.billboard.type).icon }}
+                    {{ getBillboardTypeInfo(fav.billboard.type).label }}
+                  </span>
+                </div>
+                <div class="list-meta">
+                  <span class="location">📍 {{ fav.billboard.location || 'N/A' }}</span>
+                  <span class="divider">•</span>
+                  <span class="size">📐 {{ fav.billboard.size || 'N/A' }}</span>
+                  <span class="divider">•</span>
+                  <span class="owner">👤 {{ fav.billboard.owner.name }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="list-price">
+              <span class="amount">{{ formatCurrency(fav.billboard.pricePerDay) }}</span>
+              <span class="period">/day</span>
+            </div>
+            <div class="list-actions">
+              <button class="btn btn-primary btn-sm" (click)="openBookingModal(fav.billboard)">
+                📅 Book
+              </button>
+              <button class="btn btn-icon"
+                      (click)="removeFromFavorites(fav.billboard.id)"
+                      [disabled]="removingId() === fav.billboard.id">
+                @if (removingId() === fav.billboard.id) {
+                  <span class="btn-spinner"></span>
+                } @else {
+                  ❤️
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- No Results -->
+    @if (favorites().length > 0 && filteredFavorites().length === 0) {
+      <div class="no-results">
+        <span class="no-results-icon">🔍</span>
+        <h3>No matches found</h3>
+        <p>Try adjusting your search term</p>
+        <button class="btn btn-outline" (click)="searchTerm.set('')">Clear Search</button>
+      </div>
+    }
+  }
+
+  <!-- Booking Modal -->
+  @if (showBookingModal() && selectedBillboard()) {
+    <div class="modal-overlay" (click)="closeBookingModal()">
+      <div class="modal-content booking-modal" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeBookingModal()">×</button>
+
+        <div class="modal-header">
+          <h2>📅 Book Billboard</h2>
+        </div>
+
+        <div class="modal-body">
+          <div class="billboard-summary">
+            <h3>{{ selectedBillboard()!.title || 'Untitled Billboard' }}</h3>
+            <p class="location">📍 {{ selectedBillboard()!.location }}</p>
+            <div class="price-info">
+              <span class="price">{{ formatCurrency(selectedBillboard()!.pricePerDay) }}</span>
+              <span class="period">per day</span>
+            </div>
+          </div>
+
+          <div class="booking-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="startDate">Start Date <span class="required">*</span></label>
+                <input type="date"
+                       id="startDate"
+                       class="form-control"
+                       [min]="getMinDate()"
+                       [(ngModel)]="bookingStartDate">
+              </div>
+              <div class="form-group">
+                <label for="endDate">End Date <span class="required">*</span></label>
+                <input type="date"
+                       id="endDate"
+                       class="form-control"
+                       [min]="bookingStartDate || getMinDate()"
+                       [(ngModel)]="bookingEndDate">
+              </div>
+            </div>
+
+            @if (bookingStartDate && bookingEndDate) {
+              <div class="booking-summary">
+                <div class="summary-item">
+                  <span class="label">Duration:</span>
+                  <span class="value">{{ calculateDays() }} days</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Rate per day:</span>
+                  <span class="value">{{ formatCurrency(selectedBillboard()!.pricePerDay) }}</span>
+                </div>
+                <div class="summary-item total">
+                  <span class="label">Total Amount:</span>
+                  <span class="value">{{ formatCurrency(calculateTotal()) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeBookingModal()">Cancel</button>
+          <button class="btn btn-primary"
+                  (click)="submitBooking()"
+                  [disabled]="processing() || !bookingStartDate || !bookingEndDate">
+            @if (processing()) {
+              <span class="btn-spinner"></span>
+              Processing...
+            } @else {
+              📅 Submit Booking Request
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,74 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🔑 Recovery Codes</h2>
+      <button class="close-btn" (click)="close()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (isLoading()) {
+        <div class="loading-state">
+          <div class="spinner-large"></div>
+          <p>Generating your recovery codes...</p>
+        </div>
+      } @else if (errorMessage()) {
+        <div class="alert alert-error">
+          <span class="alert-icon">⚠️</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+        <button class="btn-retry" (click)="generateCodes()">
+          🔄 Try Again
+        </button>
+      } @else {
+        <div class="warning-box">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-content">
+            <h3>Important: Save These Codes Securely</h3>
+            <ul>
+              <li>Each code can only be used <strong>once</strong></li>
+              <li>Use these codes if you lose access to your 2FA device</li>
+              <li>Store them in a secure password manager or safe location</li>
+              <li>Never share these codes with anyone</li>
+            </ul>
+          </div>
+        </div>
+
+        @if (successMessage()) {
+          <div class="alert alert-success">
+            <span class="alert-icon">✅</span>
+            <span>{{ successMessage() }}</span>
+          </div>
+        }
+
+        <div class="codes-container">
+          <div class="codes-grid">
+            @for (code of recoveryCodes(); track code) {
+              <div class="code-item">
+                {{ code }}
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-primary" (click)="downloadCodes()">
+            📥 Download Codes
+          </button>
+          <button class="btn-secondary" (click)="copyCodes()">
+            📋 Copy to Clipboard
+          </button>
+          <button class="btn-secondary" (click)="printCodes()">
+            🖨️ Print Codes
+          </button>
+        </div>
+
+        @if (!hasDownloaded()) {
+          <div class="download-reminder">
+            <span class="reminder-icon">💡</span>
+            <span>Remember to download or save your codes before closing!</span>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</div>

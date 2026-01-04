@@ -1,0 +1,348 @@
+/* ============================================
+   PAYOUTS - Compact Enterprise Dashboard
+   ============================================ */
+
+.payouts-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+/* Page Header - Compact */
+.page-header {
+  margin-bottom: 16px;
+}
+
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.5px;
+}
+
+.page-header .subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Stats Row - Compact */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card.pending {
+  border-left: 3px solid #f59e0b;
+}
+
+.stat-card.amount-pending {
+  border-left: 3px solid #3b82f6;
+}
+
+.stat-card.paid {
+  border-left: 3px solid #10b981;
+}
+
+/* Ng-Zorro Card Overrides */
+.stat-card ::ng-deep .ant-card-body {
+  padding: 0 !important;
+}
+
+.stat-card ::ng-deep .ant-statistic-title {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.stat-card ::ng-deep .ant-statistic-content-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Filter Card - Compact */
+.filter-card {
+  margin-bottom: 12px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+}
+
+.filter-card ::ng-deep .ant-card-body {
+  padding: 12px 16px !important;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 12px;
+}
+
+.filter-row ::ng-deep .ant-select {
+  min-width: 140px;
+}
+
+.filter-row ::ng-deep .ant-select-selector {
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  height: 34px !important;
+}
+
+.filter-row ::ng-deep .ant-select-selection-item {
+  line-height: 32px !important;
+}
+
+/* Table Card - Compact */
+.table-card {
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.table-card ::ng-deep .ant-card-body {
+  padding: 0 !important;
+}
+
+/* Table Styles */
+.table-card ::ng-deep .ant-table {
+  font-size: 12px;
+}
+
+.table-card ::ng-deep .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  padding: 10px 12px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.table-card ::ng-deep .ant-table-tbody > tr > td {
+  padding: 10px 12px !important;
+  font-size: 12px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.table-card ::ng-deep .ant-table-tbody > tr:hover > td {
+  background: #f8fafc !important;
+}
+
+/* Owner Info */
+.owner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.owner-info strong {
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.owner-info small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+/* Amount */
+.amount {
+  font-weight: 700;
+  color: #059669;
+  font-size: 13px;
+}
+
+/* Payout ID */
+.payout-id {
+  font-family: 'SF Mono', 'Monaco', monospace;
+  font-size: 10px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+/* Failure Reason */
+.failure-reason {
+  color: #ef4444;
+  font-size: 11px;
+  cursor: help;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+/* Status Tags */
+.table-card ::ng-deep .ant-tag {
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Action Buttons */
+.table-card ::ng-deep .ant-btn-sm {
+  font-size: 11px !important;
+  height: 26px !important;
+  padding: 0 10px !important;
+  border-radius: 5px !important;
+}
+
+/* Modal Styles */
+.modal-content {
+  padding: 6px 0;
+}
+
+.payout-details {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.payout-details p {
+  margin: 6px 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.payout-details strong {
+  color: #1e293b;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #475569;
+  font-size: 12px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group .hint {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Pagination Override */
+.table-card ::ng-deep .ant-pagination {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.table-card ::ng-deep .ant-pagination-item,
+.table-card ::ng-deep .ant-pagination-prev,
+.table-card ::ng-deep .ant-pagination-next {
+  min-width: 28px !important;
+  height: 28px !important;
+  line-height: 26px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+.table-card ::ng-deep .ant-pagination-item-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-color: transparent !important;
+}
+
+.table-card ::ng-deep .ant-pagination-item-active a {
+  color: white !important;
+}
+
+/* Empty State */
+.table-card ::ng-deep .ant-empty {
+  padding: 40px 20px;
+}
+
+.table-card ::ng-deep .ant-empty-description {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-row ::ng-deep .ant-select {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}

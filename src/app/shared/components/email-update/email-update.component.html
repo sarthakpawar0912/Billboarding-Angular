@@ -1,0 +1,135 @@
+<div class="modal-overlay" (click)="cancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Change Email Address</h2>
+      <button class="close-btn" (click)="cancel()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Success Message -->
+      <div *ngIf="successMessage()" class="success-message">
+        {{ successMessage() }}
+      </div>
+
+      <!-- Main Form -->
+      <form *ngIf="!showConfirmation() && !successMessage()" [formGroup]="emailForm" (ngSubmit)="onSubmit()">
+        <div class="current-email">
+          <label>Current Email</label>
+          <div class="email-display">{{ currentEmail() }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="newEmail">New Email Address <span class="required">*</span></label>
+          <input
+            type="email"
+            id="newEmail"
+            formControlName="newEmail"
+            class="form-input"
+            placeholder="Enter new email address"
+            [class.error]="hasError('newEmail', 'required') || hasError('newEmail', 'email')">
+
+          <div *ngIf="hasError('newEmail', 'required')" class="error-text">
+            Email is required
+          </div>
+          <div *ngIf="hasError('newEmail', 'email')" class="error-text">
+            Please enter a valid email address
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmEmail">Confirm New Email <span class="required">*</span></label>
+          <input
+            type="email"
+            id="confirmEmail"
+            formControlName="confirmEmail"
+            class="form-input"
+            placeholder="Re-enter new email address"
+            [class.error]="hasError('confirmEmail', 'required') || hasFormError('emailMismatch')">
+
+          <div *ngIf="hasError('confirmEmail', 'required')" class="error-text">
+            Please confirm your new email
+          </div>
+          <div *ngIf="hasFormError('emailMismatch')" class="error-text">
+            Email addresses do not match
+          </div>
+        </div>
+
+        <div class="info-box">
+          <strong>ℹ️ Note:</strong>
+          <p>Your backend doesn't require password verification for email updates.</p>
+        </div>
+
+        <div class="warning-box">
+          <strong>⚠️ Important:</strong>
+          <ul>
+            <li>A verification email will be sent to your new email address</li>
+            <li>Your email will be updated only after verification</li>
+            <li>You can continue using your current email until verified</li>
+          </ul>
+        </div>
+
+        <div *ngIf="errorMessage()" class="error-message">
+          {{ errorMessage() }}
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            [disabled]="emailForm.invalid || isUpdating()"
+            class="btn-primary">
+            {{ isUpdating() ? 'Updating...' : 'Update Email' }}
+          </button>
+          <button
+            type="button"
+            (click)="cancel()"
+            class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      <!-- Confirmation Step -->
+      <div *ngIf="showConfirmation() && !successMessage()" class="confirmation">
+        <div class="confirmation-icon">⚠️</div>
+        <h3>Confirm Email Change</h3>
+        <p>Are you sure you want to change your email address?</p>
+
+        <div class="email-change-summary">
+          <div class="email-row">
+            <span class="label">Current Email:</span>
+            <span class="value">{{ currentEmail() }}</span>
+          </div>
+          <div class="arrow">↓</div>
+          <div class="email-row">
+            <span class="label">New Email:</span>
+            <span class="value new">{{ emailForm.get('newEmail')?.value }}</span>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          A verification email will be sent to <strong>{{ emailForm.get('newEmail')?.value }}</strong>.
+          Please check your inbox and click the verification link.
+        </div>
+
+        <div *ngIf="errorMessage()" class="error-message">
+          {{ errorMessage() }}
+        </div>
+
+        <div class="form-actions">
+          <button
+            (click)="confirmUpdate()"
+            [disabled]="isUpdating()"
+            class="btn-primary">
+            {{ isUpdating() ? 'Processing...' : 'Yes, Change Email' }}
+          </button>
+          <button
+            (click)="cancelConfirmation()"
+            [disabled]="isUpdating()"
+            class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,356 @@
+<div class="auth-page">
+  <!-- Left Side - Branding -->
+  <div class="auth-branding">
+    <div class="branding-content">
+      <div class="logo">
+        <span class="logo-icon">🚀</span>
+        <span class="logo-text">BOABP</span>
+      </div>
+      <h1>Transform Your Outdoor Advertising Game!</h1>
+      <p>Join thousands of smart advertisers and billboard owners making connections, growing revenues, and dominating the outdoor advertising space.</p>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">✨</span>
+          <span>AI-Powered Discovery</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">📊</span>
+          <span>Live Performance Metrics</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">💎</span>
+          <span>Premium Locations</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">⚡</span>
+          <span>Instant Bookings</span>
+        </div>
+      </div>
+    </div>
+    <div class="branding-footer">
+      <p>🎉 Join 500+ successful partners across India</p>
+    </div>
+  </div>
+
+  <!-- Right Side - Login Form -->
+  <div class="auth-form-container">
+    <div class="auth-card">
+      <!-- Regular Login Form -->
+      @if (!show2FAForm()) {
+        <div class="auth-header">
+          <h2>Hey there, Superstar! ✨</h2>
+          <p>Ready to crush your advertising goals?</p>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="alert alert-error">
+            <span class="alert-icon">⚠️</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="signinForm" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="email">
+              <span class="label-icon">📧</span>
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              placeholder="Enter your email"
+              [class.input-error]="signinForm.get('email')?.invalid && signinForm.get('email')?.touched">
+            @if (signinForm.get('email')?.invalid && signinForm.get('email')?.touched) {
+              <div class="field-error">
+                @if (signinForm.get('email')?.errors?.['required']) {
+                  <span>Email is required</span>
+                }
+                @if (signinForm.get('email')?.errors?.['email']) {
+                  <span>Please enter a valid email</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="password">
+              <span class="label-icon">🔒</span>
+              Password
+            </label>
+            <div class="password-wrapper">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                id="password"
+                formControlName="password"
+                placeholder="Enter your password"
+                [class.input-error]="signinForm.get('password')?.invalid && signinForm.get('password')?.touched">
+              <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
+                {{ showPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            @if (signinForm.get('password')?.invalid && signinForm.get('password')?.touched) {
+              <div class="field-error">
+                @if (signinForm.get('password')?.errors?.['required']) {
+                  <span>Password is required</span>
+                }
+                @if (signinForm.get('password')?.errors?.['minlength']) {
+                  <span>Password must be at least 6 characters</span>
+                }
+              </div>
+            }
+          </div>
+
+          <button type="submit" class="btn-submit" [disabled]="signinForm.invalid || isLoading()">
+            @if (isLoading()) {
+              <span class="spinner"></span>
+              <span>Getting you in...</span>
+            } @else {
+              <span>Let's Go!</span>
+              <span class="btn-arrow">🚀</span>
+            }
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>First time here?</span>
+        </div>
+
+        <a routerLink="/signup" class="btn-secondary">
+          🎉 Join the Platform
+        </a>
+
+        <div class="demo-credentials">
+          <p class="demo-title">⚡ Quick Access - Try it out!</p>
+          <div class="demo-list">
+            <div class="demo-item" (click)="fillCredentials('22510256.dypit@dypvp.edu.in', 'admin123')">
+              <span class="demo-role admin">Admin</span>
+              <span class="demo-email">22510256.dypit&#64;dypvp.edu.in</span>
+            </div>
+            <div class="demo-item" (click)="fillCredentials('sartpawar0912@gmail.com', 'owner123')">
+              <span class="demo-role owner">Owner</span>
+              <span class="demo-email">sartpawar0912&#64;gmail.com</span>
+            </div>
+            <div class="demo-item" (click)="fillCredentials('sarthakpawar0912@gmail.com', 'sarthak123')">
+              <span class="demo-role advertiser">Advertiser</span>
+              <span class="demo-email">sarthakpawar0912&#64;gmail.com</span>
+            </div>
+          </div>
+          <p class="demo-hint">👆 Tap any role to auto-fill</p>
+        </div>
+      }
+
+      <!-- 2FA Verification Form -->
+      @if (show2FAForm()) {
+        <div class="auth-header">
+          @if (twoFactorMethod() === 'MAGIC_LINK') {
+            <h2>Check Your Email 🔗</h2>
+            <p>We sent a magic link to login instantly</p>
+          } @else {
+            <h2>Verify Your Identity 🔐</h2>
+            @if (!showRecoveryInput()) {
+              <p>Enter the 6-digit code sent to your email</p>
+            } @else {
+              <p>Enter one of your backup recovery codes</p>
+            }
+          }
+
+          <!-- Context badges for forced or risky login -->
+          @if (forceTwoFactor()) {
+            <div class="context-badge admin-forced">
+              <span class="badge-icon">🔒</span>
+              <span>Admin-enforced 2FA</span>
+            </div>
+          }
+          @if (riskyLogin()) {
+            <div class="context-badge risky-login">
+              <span class="badge-icon">⚠️</span>
+              <span>Unusual activity detected</span>
+            </div>
+          }
+        </div>
+
+        @if (twoFactorMethod() === 'MAGIC_LINK') {
+          <div class="otp-email-info magic-link-info">
+            <span class="otp-email-icon">🔗</span>
+            <span>Magic link sent to <strong>{{ pendingEmail }}</strong></span>
+          </div>
+
+          <div class="otp-validity-info">
+            <span class="validity-icon">⏱️</span>
+            <span>Link valid for <strong>15 minutes</strong></span>
+          </div>
+        } @else if (!showRecoveryInput()) {
+          <div class="otp-email-info">
+            <span class="otp-email-icon">📧</span>
+            <span>Code sent to <strong>{{ pendingEmail }}</strong></span>
+          </div>
+
+          <div class="otp-validity-info">
+            <span class="validity-icon">⏱️</span>
+            <span>OTP valid for <strong>5 minutes</strong></span>
+          </div>
+        } @else {
+          <div class="otp-email-info">
+            <span class="otp-email-icon">🔑</span>
+            <span>Lost access to your 2FA method? Use a backup code</span>
+          </div>
+        }
+
+        @if (successMessage()) {
+          <div class="alert alert-success">
+            <span class="alert-icon">✅</span>
+            <span>{{ successMessage() }}</span>
+          </div>
+        }
+
+        @if (errorMessage()) {
+          <div class="alert alert-error">
+            <span class="alert-icon">⚠️</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        @if (twoFactorMethod() === 'MAGIC_LINK') {
+          <!-- Magic Link Sent - No form needed -->
+          <div class="magic-link-sent">
+            <div class="magic-link-icon-large">📨</div>
+            <h3>Check your inbox!</h3>
+            <p>Click the magic link in your email to login instantly.</p>
+            <p class="magic-link-hint">Don't see it? Check your spam folder.</p>
+          </div>
+
+          <div class="resend-magic-link">
+            @if (resendCooldown() > 0) {
+              <span class="resend-cooldown">Resend link in {{ resendCooldown() }}s</span>
+            } @else {
+              <button
+                type="button"
+                class="resend-btn magic-link-resend"
+                (click)="resendMagicLink()"
+                [disabled]="isResendingOtp()">
+                @if (isResendingOtp()) {
+                  <span class="spinner-small"></span> Sending...
+                } @else {
+                  🔗 Resend Magic Link
+                }
+              </button>
+            }
+          </div>
+        } @else if (!showRecoveryInput()) {
+          <form [formGroup]="otpForm" (ngSubmit)="onVerifyOtp()">
+            <div class="form-group">
+              <label for="otp">
+                <span class="label-icon">🔢</span>
+                Enter OTP
+              </label>
+              <input
+                type="text"
+                id="otp"
+                formControlName="otp"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+                class="otp-input"
+                [class.input-error]="otpForm.get('otp')?.invalid && otpForm.get('otp')?.touched">
+              @if (otpForm.get('otp')?.invalid && otpForm.get('otp')?.touched) {
+                <div class="field-error">
+                  @if (otpForm.get('otp')?.errors?.['required']) {
+                    <span>OTP is required</span>
+                  }
+                  @if (otpForm.get('otp')?.errors?.['minlength'] || otpForm.get('otp')?.errors?.['maxlength']) {
+                    <span>OTP must be 6 digits</span>
+                  }
+                  @if (otpForm.get('otp')?.errors?.['pattern']) {
+                    <span>OTP must contain only numbers</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <button type="submit" class="btn-submit" [disabled]="otpForm.invalid || isLoading()">
+              @if (isLoading()) {
+                <span class="spinner"></span>
+                <span>Verifying...</span>
+              } @else {
+                <span>Verify & Login</span>
+                <span class="btn-arrow">✅</span>
+              }
+            </button>
+          </form>
+        } @else {
+          <div class="form-group">
+            <label for="recovery-code">
+              <span class="label-icon">🔑</span>
+              Recovery Code
+            </label>
+            <input
+              type="text"
+              id="recovery-code"
+              [(ngModel)]="recoveryCode"
+              placeholder="Enter your recovery code"
+              class="otp-input">
+          </div>
+
+          <button
+            type="button"
+            class="btn-submit"
+            (click)="onVerifyRecoveryCode()"
+            [disabled]="!recoveryCode() || isLoading()">
+            @if (isLoading()) {
+              <span class="spinner"></span>
+              <span>Verifying...</span>
+            } @else {
+              <span>Verify Recovery Code</span>
+              <span class="btn-arrow">✅</span>
+            }
+          </button>
+        }
+
+        <div class="otp-actions">
+          @if (twoFactorMethod() !== 'MAGIC_LINK' && !showRecoveryInput()) {
+            <div class="resend-otp">
+              @if (resendCooldown() > 0) {
+                <span class="resend-cooldown">Resend OTP in {{ resendCooldown() }}s</span>
+              } @else {
+                <button
+                  type="button"
+                  class="resend-btn"
+                  (click)="resendOtp()"
+                  [disabled]="isResendingOtp()">
+                  @if (isResendingOtp()) {
+                    <span class="spinner-small"></span> Sending...
+                  } @else {
+                    🔄 Resend OTP
+                  }
+                </button>
+              }
+            </div>
+          }
+
+          <div class="alternative-options">
+            @if (twoFactorMethod() !== 'MAGIC_LINK') {
+              <button
+                type="button"
+                class="link-btn"
+                (click)="toggleRecoveryInput()">
+                @if (!showRecoveryInput()) {
+                  🔑 Use Recovery Code
+                } @else {
+                  ← Back to OTP
+                }
+              </button>
+            }
+            <a routerLink="/reset-2fa" class="link-btn">
+              🔧 Reset 2FA
+            </a>
+          </div>
+
+          <button type="button" class="back-btn" (click)="backToLogin()">
+            ← Back to Login
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</div>
